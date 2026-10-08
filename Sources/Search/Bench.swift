@@ -1310,6 +1310,42 @@ final class Bench {
             browser.cancelFileImport()
             answer(["cancelling": browser.fileImport?.cancelling ?? false])
 
+        case "tab-type":
+            // The field in the tab, on the tab in front: the edit begun as a
+            // click on it does, what is given typed into it key by key as the
+            // keyboard would, then "keys" (down, up, return, delete) pressed.
+            // What the field and its list are left showing. Test runs only.
+            guard Store.testing else { answer(["error": "tab-type only works on a --test run"]); return }
+            guard let tab = browser.active else { answer(["error": "no tab"]); return }
+            if browser.editingTab != tab.id { browser.beginTabEdit(tab) }
+            let text = request["text"] as? String ?? ""
+            let keys = request["keys"] as? [String] ?? []
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                guard let editor = browser.window?.firstResponder as? NSTextView,
+                      let field = editor.delegate as? NSTextField else { answer(["error": "the field isn't focused"]); return }
+                if request["clear"] as? Bool == true { editor.selectAll(nil); editor.deleteBackward(nil) }
+                for ch in text { editor.insertText(String(ch), replacementRange: editor.selectedRange()) }
+                for key in keys {
+                    switch key {
+                    case "down": editor.doCommand(by: #selector(NSResponder.moveDown(_:)))
+                    case "up": editor.doCommand(by: #selector(NSResponder.moveUp(_:)))
+                    case "return": editor.doCommand(by: #selector(NSResponder.insertNewline(_:)))
+                    case "delete": editor.doCommand(by: #selector(NSResponder.deleteBackward(_:)))
+                    default: break
+                    }
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    let selected = editor.selectedRange()
+                    var shot = ""
+                    if let path = request["picture"] as? String, TabOffersPanel.picture(to: path) { shot = path }
+                    answer(["field": field.stringValue, "selected": [selected.location, selected.length],
+                            "offers": browser.tabOffers.map { "\($0.key) | \($0.url.absoluteString)" },
+                            "picked": browser.tabPicked ?? -1, "listShown": TabOffersPanel.isShown,
+                            "editing": browser.editingTab != nil, "draft": browser.tabDraft,
+                            "active": browser.active?.address?.absoluteString ?? "", "picture": shot])
+                }
+            }
+
         case "menus":
             // Every menu of the menu bar, by title, after SwiftUI has filled
             // it — and whether the AI add-on counts as on. Reads only.

@@ -876,8 +876,10 @@ struct TabAddressField: NSViewRepresentable {
         field.lineBreakMode = .byClipping
         field.stringValue = browser.tabDraft
         context.coordinator.watch(field)
-        // The site card stands under whichever field the address is in.
+        // The site card stands under whichever field the address is in, and
+        // the list of places once something is typed.
         SiteCardPanel.follow(browser, anchor: field)
+        TabOffersPanel.follow(browser, anchor: field)
         return field
     }
 
@@ -918,14 +920,26 @@ struct TabAddressField: NSViewRepresentable {
         var browser: Browser
         var claimed = false
         var typing = false
+        /// A key that takes letters off: the field mustn't put the same
+        /// letters straight back as a completion, or it can't be shortened.
+        private var deleting = false
 
         init(browser: Browser) { self.browser = browser }
 
         func controlTextDidChange(_ note: Notification) {
             guard let field = note.object as? NSTextField else { return }
             typing = true
+            defer { typing = false }
+            let text = field.stringValue
+            let ending = browser.tabTyped(text)
+            // The rest of a place you have been, typed in selected, as ⌘L's
+            // field does: the next key replaces it and Return takes it.
+            if !deleting, let ending, let editor = field.currentEditor() as? NSTextView {
+                field.stringValue = text + ending
+                editor.selectedRange = NSRange(location: (text as NSString).length, length: (ending as NSString).length)
+            }
+            deleting = false
             browser.tabDraft = field.stringValue
-            typing = false
         }
 
         func control(
@@ -942,6 +956,19 @@ struct TabAddressField: NSViewRepresentable {
             case #selector(NSResponder.cancelOperation(_:)):
                 browser.cancelTabEdit()
                 return true
+            case #selector(NSResponder.moveDown(_:)) where !browser.tabOffers.isEmpty:
+                browser.walkTab(1)
+                return true
+            case #selector(NSResponder.moveUp(_:)) where !browser.tabOffers.isEmpty:
+                browser.walkTab(-1)
+                return true
+            case #selector(NSResponder.deleteBackward(_:)),
+                 #selector(NSResponder.deleteForward(_:)),
+                 #selector(NSResponder.deleteWordBackward(_:)),
+                 #selector(NSResponder.deleteWordForward(_:)),
+                 #selector(NSResponder.deleteToBeginningOfLine(_:)):
+                deleting = true
+                return false
             default:
                 return false
             }

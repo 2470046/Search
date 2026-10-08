@@ -46,6 +46,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Browser import distinguishes macOS refusing access from an empty or missing data folder, keeps partially unreadable profiles visible alongside readable ones, and shows permission guidance in Welcome even when another browser is available ([#583](https://github.com/driceroland/Search/issues/583)).
 - A browser folder chosen for import is kept only for the current session and shown in the import sheet; Chromium JSON reads are limited to 64 MB and checked through the opened file.
 - Signing in to Affinity Pathfinder from its panel on a website works. Connect Affinity reloaded the website instead of opening the sign-in window: an extension's page in a website's frame that opens, moves or closes a window now has it done by the extension's background, as its other calls already were, where WebKit ended the website's process. Once signed in, the panel never heard of it: a content script reading the address of its own extension's frame got a hidden one, and posting to it threw. And an extension's popup window whose page closes itself now closes, instead of staying open on a blank page.
+- The address in the tab offers places as you type, as ⌘L's field does: pages from your history, a search, and the rest of an address you have been to, typed in ahead so Return takes it. ↓ and ↑ walk the list, a click takes a row. Thanks [@shohruxsaidov](https://github.com/shohruxsaidov) for asking ([#534](https://github.com/driceroland/Search/issues/534))
 
 ### Held back
 
