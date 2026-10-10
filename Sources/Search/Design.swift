@@ -25,6 +25,15 @@ enum Palette {
     /// bookmarks bar and the gaps share it, a touch off the page's white, so
     /// the card reads as one (see CardEdge).
     static let frame = Color(nsColor: NS.frame)
+    /// The column's own greys, on that ground: the live tab, the one under the
+    /// pointer, the resting pin squares and the live pin. The white column's
+    /// wash, hover and pinLive all but vanished on it (Drice: the pins' squares
+    /// and the open tab no longer showed), so these keep the same steps of
+    /// contrast from the frame that those kept from the white.
+    static let sideWash = Color(nsColor: NS.sideWash)
+    static let sideHover = Color(nsColor: NS.sideHover)
+    static let sideTile = Color(nsColor: NS.sideTile)
+    static let sidePinLive = Color(nsColor: NS.sidePinLive)
     /// The only two that aren't grey: a connection nobody can read on the
     /// way, and one anybody can (see SiteCard.swift).
     static let safe = Color(nsColor: NS.safe)           // green-700 · green-400
@@ -42,6 +51,10 @@ enum Palette {
         static let pinLive = pair(0.90, 0.21)
         static let hover = pair(0.965, 0.15)
         static let frame = pair(0.955, 0.075)
+        static let sideWash = pair(0.895, 0.155)
+        static let sideHover = pair(0.915, 0.13)
+        static let sideTile = pair(0.925, 0.115)
+        static let sidePinLive = pair(0.86, 0.19)
         /// The resting traffic lights, drawn by hand when the app is behind.
         static let resting = pair(0.80, 0.30)
         static let safe = tint(light: (0.08, 0.50, 0.24), dark: (0.29, 0.87, 0.50))
