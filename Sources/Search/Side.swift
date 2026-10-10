@@ -9,6 +9,9 @@ import SwiftUI
 struct SideBar: View {
     @ObservedObject var browser: Browser
     @ObservedObject var prefs: Preferences
+    /// On the window's ground, beside the page's card (see CardEdge): the
+    /// ground's colour and no edge of its own, the card's edge being the line.
+    var onFrame = false
 
     @Namespace private var pill
 
@@ -93,14 +96,14 @@ struct SideBar: View {
         .onAppear { SpaceSwipe.shared.start(for: browser) }
         .background {
             ZStack {
-                landing ? Palette.hover : Palette.ground
+                landing ? Palette.hover : onFrame ? Palette.frame : Palette.ground
                 if prefs.splitView {
                     SplitDropZone(browser: browser, tab: nil, kind: .strip)
                 }
             }
         }
         .overlay(alignment: innerEdge) {
-            Rectangle().fill(Palette.hairline).frame(width: 1)
+            if !onFrame { Rectangle().fill(Palette.hairline).frame(width: 1) }
         }
         .overlay(alignment: innerEdge) { edge }
         .onDrop(of: [.url, .text], isTargeted: $landing) { providers in

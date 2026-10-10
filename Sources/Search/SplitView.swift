@@ -7,6 +7,8 @@ import SwiftUI
 /// stage says the pages are.
 struct SplitStage: View {
     @ObservedObject var browser: Browser
+    /// Each page's corners, as a card (see CardEdge).
+    var corner: CGFloat = 0
     @ObservedObject private var drag = TabDrag.shared
     /// Where each page on screen is, as the stage last said.
     @State private var frames: [Tab.ID: CGRect] = [:]
@@ -32,7 +34,8 @@ struct SplitStage: View {
                     }
                 },
                 hover: { hovered = $0 },
-                find: browser.finding ? browser : nil
+                find: browser.finding ? browser : nil,
+                corner: corner
             )
             ForEach(shown) { tab in
                 if let frame = frames[tab.id] {

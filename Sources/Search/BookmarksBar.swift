@@ -11,6 +11,10 @@ import SwiftUI
 struct BookmarksBar: View {
     @ObservedObject var browser: Browser
     @ObservedObject var bookmarks: Bookmarks
+    /// On the window's ground, above the page's card, with the tabs down the
+    /// side: the ground's colour and no line of its own, the card's edge
+    /// being the line (see CardEdge).
+    var onFrame = false
 
     static let height: CGFloat = 30
 
@@ -36,9 +40,9 @@ struct BookmarksBar: View {
         }
         .frame(height: BookmarksBar.height)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Palette.ground)
+        .background(onFrame ? Palette.frame : Palette.ground)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Palette.hairline).frame(height: 1)
+            if !onFrame { Rectangle().fill(Palette.hairline).frame(height: 1) }
         }
     }
 
