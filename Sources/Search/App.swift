@@ -87,6 +87,19 @@ struct SearchApp: App {
                 Button("Find Previous") { browser.look(forward: false) }
                     .shortcut("edit.findPrevious")
                     .disabled(!browser.finding)
+                Divider()
+                // As in Safari: each follows the Mac until switched here
+                // (see Substitutions.swift).
+                Menu("Substitutions") {
+                    Button("Show Substitutions") { Substitution.showPanel() }
+                    Divider()
+                    ForEach(Substitution.allCases, id: \.self) { kind in
+                        Toggle(kind.title, isOn: Binding(
+                            get: { browser.substitutes(kind) },
+                            set: { _ in browser.toggleSubstitution(kind) }
+                        ))
+                    }
+                }
             }
             CommandGroup(replacing: .toolbar) {
                 Toggle("Show Tabs in Sidebar", isOn: Binding(
