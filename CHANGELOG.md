@@ -35,6 +35,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Fixed
 
+- A password saved for a sign-in with no name, only a password or access code to type, is offered again on your next visit and shows in Settings › Passwords. It was saved but never read back.
 - Sign-ins that ask for your name or email first, then your password on the next page — impots.gouv.fr, Google, Microsoft — offer your saved accounts on the first page too, and the name you gave there is the one saved with the password.
 - Your Mac's text replacements work as you type in pages, as in Safari and every other app, following the Mac's own setting (System Settings › Keyboard). Edit › Substitutions turns them off or on, and smart quotes and smart dashes too, which stay off in pages unless you turn them on there. Asked for by email and on X
 - A website an extension lists in its manifest can send it messages, as in Chrome: claude.ai, for one, hands Claude in Chrome its sign-in that way, and approving it ended in "Authorization failed". Only the sites an extension names get to, by Chrome's own rules, and Google's sites are left out. A page already open when Search starts needs a reload first. Thanks [@cunyiles](https://github.com/cunyiles) for tracking it down ([#496](https://github.com/driceroland/Search/issues/496))
