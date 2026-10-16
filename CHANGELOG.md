@@ -40,6 +40,7 @@ in [ROADMAP.md](ROADMAP.md).
 - AdBlock blocks ads again. Its background asked WebKit to watch every kind of request Chrome names, two of which ("webtransport" and "webbundle") WebKit doesn't know, and WebKit refused the listener and stopped the background there: the few network rules built into its lists still applied, but nothing else did, so ads hidden by the page's own layout stayed and its button had nothing behind it. Those two are now left out of the list and the rest is watched as asked
 - A build of your own put in place of a release stops offering passkeys on its first run, as it can't do them: sites took the passkey path and failed every time. A build that can offers them again on its first run; from then on the switch is yours. Thanks [@FabianoC13](https://github.com/FabianoC13) ([#608](https://github.com/driceroland/Search/pull/608))
 - Prevent cross-site tracking, turned off in Settings › Privacy, lets a site shown inside another site's page keep its cookies, as the switch says. WebKit's own cookie policy still dropped them, so a Kaltura video in a Brightspace course said "your browser is blocking 3rd party session cookies" with the switch off too. Thanks [@Aaditya2605](https://github.com/Aaditya2605) ([#550](https://github.com/driceroland/Search/pull/550))
+- An app an extension talks to no longer has its reply cut off when it quits right after writing it. Search called the conversation over as soon as the app quit, and a reply still on its way was lost; it now reads to the end of what the app wrote, as Chrome does.
 
 ### Held back
 
