@@ -38,6 +38,7 @@ in [ROADMAP.md](ROADMAP.md).
 - The column's greys stay on the strip across the top, in Settings and in the panels: the live tab of a Split View pair, a tab group's name and the buttons there took the darker greys made for the column beside the card.
 - The native page accepts the window layout's offered size, so its previous bounds do not set the browser's minimum layout width.
 - AdBlock blocks ads again. Its background asked WebKit to watch every kind of request Chrome names, two of which ("webtransport" and "webbundle") WebKit doesn't know, and WebKit refused the listener and stopped the background there: the few network rules built into its lists still applied, but nothing else did, so ads hidden by the page's own layout stayed and its button had nothing behind it. Those two are now left out of the list and the rest is watched as asked
+- A build of your own put in place of a release stops offering passkeys on its first run, as it can't do them: sites took the passkey path and failed every time. A build that can offers them again on its first run; from then on the switch is yours. Thanks [@FabianoC13](https://github.com/FabianoC13) ([#608](https://github.com/driceroland/Search/pull/608))
 
 ### Held back
 
