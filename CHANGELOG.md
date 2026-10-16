@@ -14,6 +14,7 @@ in [ROADMAP.md](ROADMAP.md).
 ### Added
 
 - The page as a card can be turned off, in Settings › Tabs › The page as a card, beside the sidebar's settings. Off, the page reaches the window's edges and the column is white with its fine line, as before 1.0.5. It stays on unless you turn it off. Asked for on [#607](https://github.com/driceroland/Search/issues/607)
+- A small window for a link from another app closes with a swipe back from the page it opened on, since back from there is back to before it opened. The disc shows a cross instead of an arrow when letting go will close it. Pages you clicked through inside it go back as usual first
 
 ### Changed
 
