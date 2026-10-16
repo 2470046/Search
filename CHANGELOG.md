@@ -22,6 +22,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Find on Page's close button and other controls respond to clicks with Split View enabled, instead of letting them reach the page underneath. Clicks outside the find bar still reach the page. ([#615](https://github.com/driceroland/Search/issues/615))
 - A folded column comes out on the tab you are on, as it was meant to: with more tabs than the window holds, the scroll to it could be lost as the column slid out, and the tab could be out of sight. Thanks [@oddharsh](https://github.com/oddharsh) ([#599](https://github.com/driceroland/Search/pull/599))
 - Shortcuts Search reads itself, rather than through its menus, work with a Russian, Greek or any other non-Latin keyboard layout on: ⌘W in the small window, for one, did nothing. They were matched by the character the key types, Ц instead of W; they are now read through the Latin layout that goes with it, as macOS reads the menus' own. Latin layouts, AZERTY included, are unchanged. Thanks [@hnnsly](https://github.com/hnnsly)
+- A sideways scroll swipes back or forward only when the Mac's own Swipe between pages is on, in System Settings › Trackpad or › Mouse, as in Safari. With it off, a one-finger Magic Mouse scroll inside a page such as a Google Sheet went back a page once the sheet's edge was reached. Thanks [@nourspace](https://github.com/nourspace) for reporting and [@karadoganyi](https://github.com/karadoganyi) for the fix ([#464](https://github.com/driceroland/Search/issues/464), [#467](https://github.com/driceroland/Search/pull/467))
 
 ### Held back
 
