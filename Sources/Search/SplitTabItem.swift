@@ -232,7 +232,7 @@ private struct SplitTabHalf: View {
                 }
                 if !narrow {
                     Text(title)
-                        .font(.system(size: stacked ? 12.5 : 12))
+                        .font(.system(size: stacked ? prefs.sideTitle : 12))
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .foregroundStyle(focused ? Palette.ink : hovering ? Palette.ink.opacity(0.7) : Palette.muted)

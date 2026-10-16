@@ -422,6 +422,13 @@ struct SettingsPanel: View {
                         set: { on in withAnimation(Motion.glide) { prefs.cards = on } }
                     ))
                 }
+                Rule()
+                Line("Roomier tabs", "Taller rows and larger titles in the sidebar") {
+                    Switch(on: Binding(
+                        get: { prefs.roomyTabs },
+                        set: { on in withAnimation(Motion.glide) { prefs.roomyTabs = on } }
+                    ))
+                }
             }
             Rule()
             Line("Tabs show", "Beside the title, and on a pinned square") {

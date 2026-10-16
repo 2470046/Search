@@ -85,6 +85,14 @@ final class Preferences: ObservableObject {
     @Published var sideHides: Bool {
         didSet { store.set(sideHides, forKey: "sidebar.hides") }
     }
+    /// Taller lines and larger titles in the column, for anyone who finds
+    /// the default hard to read (#570). Off unless asked for.
+    @Published var roomyTabs: Bool {
+        didSet { store.set(roomyTabs, forKey: "sidebar.roomy") }
+    }
+    /// One tab's line in the column, and the size its title is set in.
+    var sideRow: CGFloat { roomyTabs ? 36 : 28 }
+    var sideTitle: CGFloat { roomyTabs ? 14 : 12.5 }
     /// How wide the column is. Pulled by its edge, and remembered.
     @Published var sideWidth: CGFloat {
         didSet { store.set(Double(sideWidth), forKey: "sidebar.width") }
@@ -414,6 +422,7 @@ final class Preferences: ObservableObject {
             ?? (store.string(forKey: "manner") == "side")
         sidePosition = store.string(forKey: "sidebar.position").flatMap(SidebarPosition.init) ?? .left
         sideHides = store.bool(forKey: "sidebar.hides")
+        roomyTabs = store.bool(forKey: "sidebar.roomy")
         let width = store.object(forKey: "sidebar.width") as? Double ?? Double(Metrics.side)
         sideWidth = min(Metrics.sideMax, max(Metrics.sideMin, CGFloat(width)))
         cards = store.object(forKey: "layout.cards") as? Bool ?? true

@@ -25,6 +25,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Search is offered under the Finder's Open With for PDFs, pictures, text files and JSON, as it was for web pages. It never becomes what opens them on a double-click. Thanks [@arvakme](https://github.com/arvakme) for asking ([#524](https://github.com/driceroland/Search/issues/524))
 - Pins go back home, off unless you turn it on in Settings: as in Arc, a pinned tab closed with ⌘W, or open when Search quits, comes back at the page it was pinned at instead of wherever you went from there.
 - New tabs can open at the end of the list instead of just after the tab you are on: Settings › Tabs › Open new tabs at the end. Off unless you turn it on.
+- Roomier tabs, off unless you turn it on in Settings › Tabs: taller rows and larger titles in the sidebar, for anyone who finds the column hard to read (#570).
 
 ### Changed
 
