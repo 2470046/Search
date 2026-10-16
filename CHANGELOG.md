@@ -64,6 +64,7 @@ in [ROADMAP.md](ROADMAP.md).
 - The site card's corners are round on macOS 26 too. A pale square of the menu's material showed past each rounded corner, and the card's shadow was square; the mask that rounds them before macOS 26 now rounds them on every version. Thanks [@mihxlko](https://github.com/mihxlko) ([#576](https://github.com/driceroland/Search/pull/576))
 - Extensions keep checking for updates while Search stays open. Updates needing more access default to Cancel and wait for a browser window. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#589](https://github.com/driceroland/Search/pull/589), [#539](https://github.com/driceroland/Search/issues/539))
 - Extensions hear once when Search actually restarts their worker, from content scripts and their own pages alike, including a recovery requested by another page. Old ports close without polling, replaying messages or reconnecting behind the extension’s back. Thanks [@quanru](https://github.com/quanru) ([#453](https://github.com/driceroland/Search/pull/453), [#514](https://github.com/driceroland/Search/pull/514))
+- Floating videos fit without cutoff from a player’s minimum size, margins, borders, padding, clips or masks. The page’s styles return when the video does. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#619](https://github.com/driceroland/Search/pull/619), [#591](https://github.com/driceroland/Search/issues/591))
 
 ### Held back
 
