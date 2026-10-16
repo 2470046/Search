@@ -7,7 +7,7 @@ fixed elements (a transform, a filter, containment…), is drawn only when on
 screen, or is faded out. Video styles also exercise minimum sizes, spacing,
 clips and masks, across viewport resizes and return. The isolation script runs
 on an ordinary tab of a hidden probe — the floating window itself is never opened — and the video
-must then fill the page's view and be visible.
+must then fill the page's view, as `contain` fits it, and be visible.
 """
 import functools
 import json
@@ -95,8 +95,12 @@ def main():
             for width, height in [(1180, 780), (700, 500), (900, 900)]:
                 sv.cmd({"do": "resize", "width": width, "height": height, "steps": 2})
                 p = json.loads(sv.cmd({"do": "eval", "id": tab, "js": PROBE}).get("value"))
-                fills = abs(p["x"]) < 1 and abs(p["y"]) < 1 and abs(p["w"] - p["iw"]) < 1 and abs(p["h"] - p["ih"]) < 1
-                t.ok(f"{name} {width}x{height}: video fits without clipping", said == "floating" and fills and p["seen"] and p["playing"] and p["fit"] == "contain" and p["clip"] == "none" and p["mask"] == "none", p)
+                # As large as it goes whole, in the middle: one way it fills the
+                # view, the other it is centred.
+                wide = abs(p["x"]) < 1 and abs(p["w"] - p["iw"]) < 1 and abs(2 * p["y"] + p["h"] - p["ih"]) < 2 and p["h"] <= p["ih"] + 1
+                tall = abs(p["y"]) < 1 and abs(p["h"] - p["ih"]) < 1 and abs(2 * p["x"] + p["w"] - p["iw"]) < 2 and p["w"] <= p["iw"] + 1
+                floating = isinstance(said, dict) and said.get("floating") is True
+                t.ok(f"{name} {width}x{height}: video fits without clipping", floating and (wide or tall) and p["seen"] and p["playing"] and p["fit"] == "contain" and p["clip"] == "none" and p["mask"] == "none", p)
             sv.cmd({"do": "eval", "id": tab, "js": restore, "world": "search"})
             time.sleep(1.1)
             after = sv.cmd({"do": "eval", "id": tab, "js": styling})["value"]
