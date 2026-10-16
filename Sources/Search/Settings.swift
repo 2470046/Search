@@ -454,6 +454,10 @@ struct SettingsPanel: View {
                 Switch(on: $prefs.newTabAfterLast)
             }
             Rule()
+            Line("Open new tabs at the end", "A new tab, or a link opened in one, goes to the bottom of the list instead of just after the tab you're on.") {
+                Switch(on: Binding(get: { prefs.newTabPlace == .end }, set: { prefs.newTabPlace = $0 ? .end : .next }))
+            }
+            Rule()
             Line("Search a site from the address field", "Type the start of a site's name, like red or yout, then Tab, and what you type next searches that site. Sites you visit that offer a search join the list.") {
                 Switch(on: $prefs.searchesSites)
             }

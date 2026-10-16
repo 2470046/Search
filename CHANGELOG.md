@@ -24,6 +24,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Remove All… in the passwords panel takes every password Search keeps out of the keychain at once, after asking and after Touch ID or your password, as showing one does, for when you move them to a password manager of your own. With the search box narrowing the list it reads Remove 12… and removes only what the list shows. Return is Cancel there. Passwords in Bitwarden, other apps and other browsers are not touched. Thanks [@Tekkiech](https://github.com/Tekkiech) for asking and [@karadoganyi](https://github.com/karadoganyi) for building it ([#471](https://github.com/driceroland/Search/pull/471), [#469](https://github.com/driceroland/Search/issues/469))
 - Search is offered under the Finder's Open With for PDFs, pictures, text files and JSON, as it was for web pages. It never becomes what opens them on a double-click. Thanks [@arvakme](https://github.com/arvakme) for asking ([#524](https://github.com/driceroland/Search/issues/524))
 - Pins go back home, off unless you turn it on in Settings: as in Arc, a pinned tab closed with ⌘W, or open when Search quits, comes back at the page it was pinned at instead of wherever you went from there.
+- New tabs can open at the end of the list instead of just after the tab you are on: Settings › Tabs › Open new tabs at the end. Off unless you turn it on.
 
 ### Changed
 

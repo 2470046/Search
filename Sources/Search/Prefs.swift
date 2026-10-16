@@ -23,6 +23,12 @@ enum Glyph: String, CaseIterable, Identifiable {
     }
 }
 
+/// Where a new tab goes in the row (Settings › Tabs). Only `next` and
+/// `end` for now; a place at the top (#606) would be one more case.
+enum NewTabPlace: String {
+    case next, end
+}
+
 /// Which edge the tab column sits on when tabs are arranged in a sidebar.
 enum SidebarPosition: String, CaseIterable, Identifiable {
     case left, right
@@ -130,6 +136,12 @@ final class Preferences: ObservableObject {
     /// Off unless asked for.
     @Published var newTabAfterLast: Bool {
         didSet { store.set(newTabAfterLast, forKey: "tabs.newAfterLast") }
+    }
+    /// Where a new tab goes in the row: just after the tab you are on, or at
+    /// the end of the list. One choice rather than a switch, so the top of
+    /// the list (#606) can join it. Next unless asked for.
+    @Published var newTabPlace: NewTabPlace {
+        didSet { store.set(newTabPlace.rawValue, forKey: "tabs.newPlace") }
     }
     /// Each launch starts with a fresh window: the pins stay, last time's
     /// other tabs don't come back (see Session.startFresh). Off unless
@@ -414,6 +426,7 @@ final class Preferences: ObservableObject {
         sleepPace = SleepPace.chosen
         lazyTabs = store.bool(forKey: "tabs.lazy")
         newTabAfterLast = store.bool(forKey: "tabs.newAfterLast")
+        newTabPlace = store.string(forKey: "tabs.newPlace").flatMap(NewTabPlace.init(rawValue:)) ?? .next
         startsFresh = store.bool(forKey: Preferences.freshKey)
         searchesSites = store.bool(forKey: "search.sites")
         siteNotifications = store.object(forKey: "notifications.ask") as? Bool ?? true
