@@ -18,6 +18,7 @@ in [ROADMAP.md](ROADMAP.md).
 ### Fixed
 
 - A pin moved to another space with Move to Space stays there. Moved to a space you didn't open before quitting, it was gone after a relaunch. Thanks [@karadoganyi](https://github.com/karadoganyi) ([#587](https://github.com/driceroland/Search/pull/587))
+- A website whose name begins with what reads as a private address is opened over https. The address field chose plain http for anything typed that started with "10." or "192.168.", which is how a server on this Mac or on the local network is reached, but those were tests on a name rather than on an address: 10.io, 10.ai, 10.org, 10.net and 10.fr are all registered websites, and so is 10.0.0.1.example.com. http://10.io/ answers without redirecting, so the page arrived unencrypted and stayed that way. A local server still gets http, now only when what was typed is four numbers and nothing more, as Dialogs.isLoopback already had it ([#590](https://github.com/driceroland/Search/issues/590))
 
 ### Held back
 
