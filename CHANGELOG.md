@@ -43,6 +43,8 @@ in [ROADMAP.md](ROADMAP.md).
 - Prevent cross-site tracking, turned off in Settings › Privacy, lets a site shown inside another site's page keep its cookies, as the switch says. WebKit's own cookie policy still dropped them, so a Kaltura video in a Brightspace course said "your browser is blocking 3rd party session cookies" with the switch off too. Thanks [@Aaditya2605](https://github.com/Aaditya2605) ([#550](https://github.com/driceroland/Search/pull/550))
 - An app an extension talks to no longer has its reply cut off when it quits right after writing it. Search called the conversation over as soon as the app quit, and a reply still on its way was lost; it now reads to the end of what the app wrote, as Chrome does.
 - Asynchronous sign-ins that submit a POST form into a new tab now open after a real click or key press. Automatic popups remain blocked, with one new tab allowed per recent interaction.
+- Browser import distinguishes macOS refusing access from an empty or missing data folder, keeps partially unreadable profiles visible alongside readable ones, and shows permission guidance in Welcome even when another browser is available ([#583](https://github.com/driceroland/Search/issues/583)).
+- A browser folder chosen for import is kept only for the current session and shown in the import sheet; Chromium JSON reads are limited to 64 MB and checked through the opened file.
 
 ### Held back
 
