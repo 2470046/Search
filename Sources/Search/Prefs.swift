@@ -125,6 +125,12 @@ final class Preferences: ObservableObject {
     @Published var lazyTabs: Bool {
         didSet { store.set(lazyTabs, forKey: "tabs.lazy") }
     }
+    /// Closing the last tab that isn't a pin, with pins beside it, leaves a
+    /// new tab instead of taking you to a pin (see Browser.close, #537).
+    /// Off unless asked for.
+    @Published var newTabAfterLast: Bool {
+        didSet { store.set(newTabAfterLast, forKey: "tabs.newAfterLast") }
+    }
     /// Each launch starts with a fresh window: the pins stay, last time's
     /// other tabs don't come back (see Session.startFresh). Off unless
     /// asked for (#406).
@@ -401,6 +407,7 @@ final class Preferences: ObservableObject {
         sleepsTabs = store.object(forKey: "tabs.sleep") as? Bool ?? true
         sleepPace = SleepPace.chosen
         lazyTabs = store.bool(forKey: "tabs.lazy")
+        newTabAfterLast = store.bool(forKey: "tabs.newAfterLast")
         startsFresh = store.bool(forKey: Preferences.freshKey)
         searchesSites = store.bool(forKey: "search.sites")
         siteNotifications = store.object(forKey: "notifications.ask") as? Bool ?? true
