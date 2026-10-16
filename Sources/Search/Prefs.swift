@@ -397,6 +397,13 @@ final class Preferences: ObservableObject {
     @Published var commandBar: Bool {
         didSet { store.set(commandBar, forKey: "commandbar") }
     }
+    /// ⌘T raises the field over the page you are on, as in Arc, and a tab is
+    /// only made once Return sends it somewhere. Escape, ⌘W or a click
+    /// outside puts the field away and leaves you where you were. Off unless
+    /// asked for.
+    @Published var floatingNewTab: Bool {
+        didSet { store.set(floatingNewTab, forKey: "newtab.floating") }
+    }
 
     init() {
         navigationLeft = store.bool(forKey: "toolbar.left")
@@ -493,6 +500,7 @@ final class Preferences: ObservableObject {
         aiProvider = store.string(forKey: "ai.provider").flatMap(AIProvider.init(rawValue:))
         aiModels = store.dictionary(forKey: "ai.models") as? [String: String] ?? [:]
         commandBar = store.bool(forKey: "commandbar")
+        floatingNewTab = store.bool(forKey: "newtab.floating")
         let history = store.bool(forKey: "swipe.history")
         holdsHistory = history
         PageView.holdsHistory = history

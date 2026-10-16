@@ -26,6 +26,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Pins go back home, off unless you turn it on in Settings: as in Arc, a pinned tab closed with ⌘W, or open when Search quits, comes back at the page it was pinned at instead of wherever you went from there.
 - New tabs can open at the end of the list instead of just after the tab you are on: Settings › Tabs › Open new tabs at the end. Off unless you turn it on.
 - Roomier tabs, off unless you turn it on in Settings › Tabs: taller rows and larger titles in the sidebar, for anyone who finds the column hard to read (#570).
+- ⌘T can raise the address field over the page you are on, as in Arc, off unless you turn it on in Settings › General › New tab in a floating field. Return opens what you typed in a new tab; Escape, ⌘W or a click outside puts the field away and leaves the page as it was. On a blank tab, or with an extension's new tab page, ⌘T opens a tab as before. Thanks [@FabianoC13](https://github.com/FabianoC13) ([#601](https://github.com/driceroland/Search/pull/601))
 
 ### Changed
 
