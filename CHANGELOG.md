@@ -21,6 +21,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Closing the last tab that isn't a pin can leave a new tab, as closing the only tab does, instead of taking you into a pin and waking it if it was asleep. The pins stay where they are, untouched, and ⇧⌘T brings the page back; closed behind a pin, it leaves the pin on screen. Off unless you turn it on in Settings › Tabs › Leave a new tab when the last tab closes. Thanks [@kingsleydon](https://github.com/kingsleydon) for reporting and [@Adithya-Sakaray](https://github.com/Adithya-Sakaray) for the fix ([#537](https://github.com/driceroland/Search/issues/537), [#538](https://github.com/driceroland/Search/pull/538))
 - Import extension-only browser profiles and ego lite; ego lite passwords are shown as unsupported.
 - Select several tabs with ⌘-click or ⇧-click, including Split View pairs, and copy their addresses from the tab menu.
+- Remove All… in the passwords panel takes every password Search keeps out of the keychain at once, after asking and after Touch ID or your password, as showing one does, for when you move them to a password manager of your own. With the search box narrowing the list it reads Remove 12… and removes only what the list shows. Return is Cancel there. Passwords in Bitwarden, other apps and other browsers are not touched. Thanks [@Tekkiech](https://github.com/Tekkiech) for asking and [@karadoganyi](https://github.com/karadoganyi) for building it ([#471](https://github.com/driceroland/Search/pull/471), [#469](https://github.com/driceroland/Search/issues/469))
 
 ### Changed
 
