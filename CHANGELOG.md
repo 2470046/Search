@@ -27,6 +27,7 @@ in [ROADMAP.md](ROADMAP.md).
 - New tabs can open at the end of the list instead of just after the tab you are on: Settings › Tabs › Open new tabs at the end. Off unless you turn it on.
 - Roomier tabs, off unless you turn it on in Settings › Tabs: taller rows and larger titles in the sidebar, for anyone who finds the column hard to read (#570).
 - ⌘T can raise the address field over the page you are on, as in Arc, off unless you turn it on in Settings › General › New tab in a floating field. Return opens what you typed in a new tab; Escape, ⌘W or a click outside puts the field away and leaves the page as it was. On a blank tab, or with an extension's new tab page, ⌘T opens a tab as before. Thanks [@FabianoC13](https://github.com/FabianoC13) ([#601](https://github.com/driceroland/Search/pull/601))
+- Pins in every space: a pin can be kept in every space, shown above each space's own pins, as Arc's favourites sit above every space. Right-click a pin and choose Keep in Every Space, or Only in This Space to take it back; unpinning it takes it out of every space. A space with its own sign-ins signs in to it its own way. Off unless you turn it on in Settings › Tabs › Pins in every space, which shows while Spaces is on. Thanks [@karadoganyi](https://github.com/karadoganyi) ([#463](https://github.com/driceroland/Search/pull/463))
 
 ### Changed
 
