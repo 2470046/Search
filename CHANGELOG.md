@@ -16,6 +16,7 @@ in [ROADMAP.md](ROADMAP.md).
 - The page as a card can be turned off, in Settings › Tabs › The page as a card, beside the sidebar's settings. Off, the page reaches the window's edges and the column is white with its fine line, as before 1.0.5. It stays on unless you turn it off. Asked for on [#607](https://github.com/driceroland/Search/issues/607)
 - A small window for a link from another app closes with a swipe back from the page it opened on, since back from there is back to before it opened. The disc shows a cross instead of an arrow when letting go will close it. Pages you clicked through inside it go back as usual first
 - Settings › General › Home page, while an extension offers to replace the new tab page: a menu of Search's own page and each extension that asked, and the way back after one took over. One extension has new tabs at a time, and the newest one you said yes to wins; before, saying no to a newer extension also took new tabs away from an older one you'd said yes to. An extension added while another has new tabs is asked too, naming the one it would replace. Thanks [@oddharsh](https://github.com/oddharsh) ([#472](https://github.com/driceroland/Search/pull/472))
+- How soon tabs sleep is a choice: Settings › Tabs › How soon tabs sleep puts a tab you aren't using to sleep after two hours (Later), half an hour (Normal, as before) or ten minutes (Sooner). Memory running short still puts them to sleep sooner, whichever you chose.
 
 ### Changed
 
