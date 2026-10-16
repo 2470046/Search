@@ -29,6 +29,7 @@ in [ROADMAP.md](ROADMAP.md).
 - A sideways scroll swipes back or forward only when the Mac's own Swipe between pages is on, in System Settings › Trackpad or › Mouse, as in Safari. With it off, a one-finger Magic Mouse scroll inside a page such as a Google Sheet went back a page once the sheet's edge was reached. Thanks [@nourspace](https://github.com/nourspace) for reporting and [@karadoganyi](https://github.com/karadoganyi) for the fix ([#464](https://github.com/driceroland/Search/issues/464), [#467](https://github.com/driceroland/Search/pull/467))
 - With the window in full screen, the page goes edge to edge: no room around it and no rounded corners, as with a video filling the screen. Out of full screen, the card comes back. Asked for on [#607](https://github.com/driceroland/Search/issues/607)
 - The column's greys stay on the strip across the top, in Settings and in the panels: the live tab of a Split View pair, a tab group's name and the buttons there took the darker greys made for the column beside the card.
+- The native page accepts the window layout's offered size, so its previous bounds do not set the browser's minimum layout width.
 
 ### Held back
 
