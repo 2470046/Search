@@ -63,6 +63,7 @@ in [ROADMAP.md](ROADMAP.md).
 - The folded column starts coming out about 45ms sooner, about 50ms after the pointer reaches the edge where it took nearly 100ms, and the folded tab bar about 25ms sooner. Each was built again, every tab of it, each time it came out; both are now kept just off the window's edge while folded and slid in. Folded, they stay where VoiceOver can reach them. Thanks [@oddharsh](https://github.com/oddharsh) ([#586](https://github.com/driceroland/Search/pull/586))
 - The site card's corners are round on macOS 26 too. A pale square of the menu's material showed past each rounded corner, and the card's shadow was square; the mask that rounds them before macOS 26 now rounds them on every version. Thanks [@mihxlko](https://github.com/mihxlko) ([#576](https://github.com/driceroland/Search/pull/576))
 - Extensions keep checking for updates while Search stays open. Updates needing more access default to Cancel and wait for a browser window. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#589](https://github.com/driceroland/Search/pull/589), [#539](https://github.com/driceroland/Search/issues/539))
+- Extensions hear once when Search actually restarts their worker, from content scripts and their own pages alike, including a recovery requested by another page. Old ports close without polling, replaying messages or reconnecting behind the extension’s back. Thanks [@quanru](https://github.com/quanru) ([#453](https://github.com/driceroland/Search/pull/453), [#514](https://github.com/driceroland/Search/pull/514))
 
 ### Held back
 
