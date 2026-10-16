@@ -19,6 +19,7 @@ in [ROADMAP.md](ROADMAP.md).
 - How soon tabs sleep is a choice: Settings › Tabs › How soon tabs sleep puts a tab you aren't using to sleep after two hours (Later), half an hour (Normal, as before) or ten minutes (Sooner). Memory running short still puts them to sleep sooner, whichever you chose.
 - A page can be exported as a PDF from the File menu, at its current full length and in the layout on screen rather than broken into sheets for printing. The export stays with the tab it was opened for, even if another becomes active before saving. Thanks [@Qddog23](https://github.com/Qddog23) for asking ([#446](https://github.com/driceroland/Search/issues/446)), and [@Rahuletto](https://github.com/Rahuletto) for the implementation.
 - Closing the last tab that isn't a pin can leave a new tab, as closing the only tab does, instead of taking you into a pin and waking it if it was asleep. The pins stay where they are, untouched, and ⇧⌘T brings the page back; closed behind a pin, it leaves the pin on screen. Off unless you turn it on in Settings › Tabs › Leave a new tab when the last tab closes. Thanks [@kingsleydon](https://github.com/kingsleydon) for reporting and [@Adithya-Sakaray](https://github.com/Adithya-Sakaray) for the fix ([#537](https://github.com/driceroland/Search/issues/537), [#538](https://github.com/driceroland/Search/pull/538))
+- Import extension-only browser profiles and ego lite; ego lite passwords are shown as unsupported.
 
 ### Changed
 
