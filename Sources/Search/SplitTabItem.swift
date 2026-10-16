@@ -131,10 +131,21 @@ private struct SplitTabHalf: View {
     private var handled: some View {
         laidOut
             .modifier(OneClick(double: false) {
-                guard interactive else { return }
+                guard interactive, NSEvent.modifierFlags.intersection([.command, .shift]).isEmpty else { return }
+                browser.clearTabSelection()
                 if focused { browser.beginTabEdit(tab) }
                 else { browser.focusPane(tab) }
             })
+            .modifier(ModifiedTabClick {
+                if interactive && !editing { browser.extendTabSelection(to: tab, modifiers: $0) }
+            })
+            .overlay {
+                if browser.selectedTabIDs.contains(tab.id) {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .strokeBorder(Palette.ink.opacity(0.35), lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+            }
             .overlay {
                 if interactive { MiddleClick { browser.close(tab) } }
             }
@@ -175,6 +186,8 @@ private struct SplitTabHalf: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             .matchedGeometryEffect(id: "live", in: pill)
+        } else if browser.selectedTabIDs.contains(tab.id) {
+            RoundedRectangle(cornerRadius: 9, style: .continuous).fill(greys.wash)
         } else if hovering {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(greys.hover)
