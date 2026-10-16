@@ -301,8 +301,16 @@ final class StageView: NSView {
         // window, with a placeholder left here in its place. The chrome
         // stepping aside lays this stage out again in that same moment, and
         // taking the page back then left the screen black with the sound
-        // still playing. WebKit puts it back itself on the way out.
-        if let web = wanted as? WKWebView, web.fullscreenState != .notInFullscreen { return }
+        // still playing. WebKit puts it back itself on the way out, at the
+        // placeholder's frame: kept at this stage's size, the chrome having
+        // come back before that (see Tab.immersed), the page comes home at
+        // its own size and is laid out once.
+        if let web = wanted as? WKWebView, web.fullscreenState != .notInFullscreen {
+            for view in subviews where view !== web && Self.isPlaceholder(view) && view.frame != bounds {
+                view.frame = bounds
+            }
+            return
+        }
 
         // Anything here that isn't wanted, out. Only ever what is actually
         // ours: a page may be somewhere else on purpose. Except the Web
@@ -355,6 +363,11 @@ final class StageView: NSView {
         guard inspector.responds(to: visible) else { return false }
         typealias Getter = @convention(c) (AnyObject, Selector) -> Bool
         return unsafeBitCast(inspector.method(for: visible), to: Getter.self)(inspector, visible)
+    }
+
+    /// What WebKit leaves in a page's place while it fills the screen.
+    private static func isPlaceholder(_ view: NSView) -> Bool {
+        String(describing: type(of: view)).contains("FullScreenPlaceholder")
     }
 
     private static func isInspector(_ view: NSView) -> Bool {

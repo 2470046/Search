@@ -298,6 +298,28 @@ final class Bench {
         }
 
         switch verb {
+        case "layouts":
+            // Test runs only: every frame the pages on screen take, looked at
+            // every few milliseconds and after each pass of the run loop, for
+            // `seconds`, each change once with when it came. With `immerse`,
+            // a page's full screen is faked in or out first, as the page's own
+            // word that it is going or back would (Forms.swift); nothing goes
+            // full screen. How many times a change of chrome moves the page
+            // (Tests/fullscreen_exit.py).
+            guard Store.testing else { answer(["error": "layouts is for test runs"]); return }
+            let seconds = min(10, request["seconds"] as? Double ?? 1.5)
+            let record = LayoutRecord(browser: browser)
+            record.look()
+            if let on = request["immerse"] as? Bool {
+                guard let tab = request["id"] == nil ? browser.active : find(request, in: browser) else { answer(missing(request)); return }
+                tab.immersed = on
+            }
+            record.start()
+            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
+                record.stop()
+                answer(["layouts": record.seen])
+            }
+
         case "tabs":
             // A private tab is nobody's business but yours: a test run has none
             // of yours, so there every tab is listed.
@@ -3481,5 +3503,53 @@ final class Bench {
           return 'ok';
         })();
         """
+    }
+}
+
+/// The pages' frames as they change, for the bench's `layouts`: one entry per
+/// change, the first being where they were.
+@MainActor
+private final class LayoutRecord {
+    weak var browser: Browser?
+    private(set) var seen: [[String: Any]] = []
+    private var last: [String: [Int]]?
+    private let began = CACurrentMediaTime()
+    private var timer: Timer?
+    private var observer: CFRunLoopObserver?
+
+    init(browser: Browser) { self.browser = browser }
+
+    func look() {
+        guard let browser, let window = browser.window else { return }
+        var now: [String: [Int]] = [:]
+        for tab in browser.tabs {
+            guard let web = tab.built, web.window === window, !web.isHiddenOrHasHiddenAncestor else { continue }
+            let r = web.convert(web.bounds, to: nil)
+            now[Bench.short(tab)] = [Int(r.minX.rounded()), Int((window.frame.height - r.maxY).rounded()),
+                                     Int(r.width.rounded()), Int(r.height.rounded())]
+        }
+        guard now != last else { return }
+        last = now
+        seen.append(["ms": Int((CACurrentMediaTime() - began) * 1000), "pages": now])
+    }
+
+    func start() {
+        let timer = Timer(timeInterval: 0.004, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.look() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+        // After everything else in the turn, Core Animation's commit included.
+        let observer = CFRunLoopObserverCreateWithHandler(nil, CFRunLoopActivity.beforeWaiting.rawValue, true, CFIndex.max) { [weak self] _, _ in
+            MainActor.assumeIsolated { self?.look() }
+        }
+        CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
+        self.observer = observer
+    }
+
+    func stop() {
+        look()
+        timer?.invalidate()
+        if let observer { CFRunLoopRemoveObserver(CFRunLoopGetMain(), observer, .commonModes) }
     }
 }
