@@ -76,6 +76,14 @@ final class Preferences: ObservableObject {
     @Published var sidebar: Bool {
         didSet { store.set(sidebar, forKey: "sidebar") }
     }
+    /// The side panel's width, as you last left it (see SidePanel.swift).
+    @Published var sidePanelWidth: CGFloat {
+        didSet {
+            let kept = min(max(sidePanelWidth, Preferences.sidePanelWidths.lowerBound), Preferences.sidePanelWidths.upperBound)
+            if kept != sidePanelWidth { sidePanelWidth = kept; return }
+            store.set(Double(sidePanelWidth), forKey: "sidepanel.width")
+        }
+    }
     /// Which side the column is on when it is shown vertically.
     @Published var sidePosition: SidebarPosition {
         didSet { store.set(sidePosition.rawValue, forKey: "sidebar.position") }
@@ -433,6 +441,8 @@ final class Preferences: ObservableObject {
         // rather than `NSApp`: on macOS 14 SwiftUI builds this before it has
         // made the application, and `NSApp` is still nil here.
         NSApplication.shared.appearance = chosen.appearance
+        sidePanelWidth = min(max(CGFloat(store.object(forKey: "sidepanel.width") as? Double ?? 380),
+                                 Preferences.sidePanelWidths.lowerBound), Preferences.sidePanelWidths.upperBound)
         sidebar = store.object(forKey: "sidebar") as? Bool
             ?? (store.string(forKey: "manner") == "side")
         sidePosition = store.string(forKey: "sidebar.position").flatMap(SidebarPosition.init) ?? .left

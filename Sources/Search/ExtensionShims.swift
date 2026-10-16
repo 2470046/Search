@@ -1392,7 +1392,7 @@ enum ExtensionShims {
           pending.then((id) => callback(id), (error) => withLastError(error, callback));
         });
       }
-      define("sidePanel", ["open", "setOptions", "getOptions", "setPanelBehavior", "getPanelBehavior"]);
+      define("sidePanel", ["open", "close", "setOptions", "getOptions", "setPanelBehavior", "getPanelBehavior"]);
       define("offscreen", ["createDocument", "closeDocument", "hasDocument"], [],
         { Reason: new Proxy({}, { get: (_, key) => String(key) }) });
       define("tabGroups", ["get", "query", "update", "move"],
@@ -3333,6 +3333,10 @@ enum ExtensionShims {
     /// button should open it.
     static var panelPath: [String: String] = [:]
     static var panelOnClick: Set<String> = []
+    /// Turned off for the whole window (setOptions enabled: false).
+    static var panelOff: Set<String> = []
+    /// What setOptions said for one tab, by the extension's tab id.
+    static var panelTabs: [String: [Int: (path: String?, enabled: Bool?)]] = [:]
     /// One voice for every extension that reads aloud.
     static let speaker = NSSpeechSynthesizer()
 
@@ -3637,12 +3641,32 @@ enum ExtensionShims {
         case "downloads.pause", "downloads.resume", "downloads.cancel", "downloads.removeFile", "downloads.getFileIcon":
             throw Unsupported(what: "\(api) isn't available in Search yet")
 
-        // MARK: side panel — a tab of its own, since this window has one column
+        // MARK: side panel — the window's, beside the page (SidePanel.swift)
         case "sidePanel.setOptions":
-            if let path = (first as? [String: Any])?["path"] as? String { panelPath[id] = path }
+            let options = first as? [String: Any] ?? [:]
+            if let tab = options["tabId"] as? Int {
+                var kept = panelTabs[id]?[tab] ?? (nil, nil)
+                if let path = options["path"] as? String { kept.path = path }
+                if let enabled = options["enabled"] as? Bool { kept.enabled = enabled }
+                panelTabs[id, default: [:]][tab] = kept
+            } else {
+                if let path = options["path"] as? String { panelPath[id] = path }
+                if let enabled = options["enabled"] as? Bool {
+                    if enabled { panelOff.remove(id) } else { panelOff.insert(id) }
+                }
+            }
+            // Turned off while it is up: it goes, as in Chrome.
+            if options["enabled"] as? Bool == false {
+                for browser in Browsers.all {
+                    if case .page(let shown, _, _) = browser.sidePanel, shown == id { browser.closeSidePanel() }
+                }
+            }
             return nil
         case "sidePanel.getOptions":
-            return ["enabled": true, "path": panelPath[id] ?? defaultPanel(context) ?? ""]
+            let tab = (first as? [String: Any])?["tabId"] as? Int
+            let own = tab.flatMap { panelTabs[id]?[$0] }
+            return ["enabled": own?.enabled ?? !panelOff.contains(id),
+                    "path": own?.path ?? panelPath[id] ?? defaultPanel(context) ?? ""]
         case "sidePanel.setPanelBehavior":
             if let on = (first as? [String: Any])?["openPanelOnActionClick"] as? Bool {
                 if on { panelOnClick.insert(id) } else { panelOnClick.remove(id) }
@@ -3651,7 +3675,24 @@ enum ExtensionShims {
         case "sidePanel.getPanelBehavior":
             return ["openPanelOnActionClick": panelOnClick.contains(id)]
         case "sidePanel.open":
-            openPanel(context, owner: owner)
+            // For a tab, its own page when it was given one, and the panel
+            // goes with that tab; otherwise the window's.
+            let tab = (first as? [String: Any])?["tabId"] as? Int
+            let own = tab.flatMap { panelTabs[id]?[$0] }
+            guard own?.enabled ?? !panelOff.contains(id),
+                  let path = own?.path ?? panelPath[id] ?? defaultPanel(context),
+                  let url = ExtensionShims.page(path, in: context), let browser = owner.browser
+            else { throw Unsupported(what: "No active side panel for this extension") }
+            // The panel, or, if it can't be made, the page as a tab of its
+            // own, as before there was a panel to put it in.
+            if !browser.showSidePanel(context, url: url, for: own?.path != nil ? browser.activeID : nil) {
+                browser.open(url, foreground: true)
+            }
+            return nil
+        case "sidePanel.close":
+            for browser in Browsers.all {
+                if case .page(let shown, _, _) = browser.sidePanel, shown == id { browser.closeSidePanel() }
+            }
             return nil
 
         // MARK: offscreen — a page with a DOM for a worker that has none
@@ -4346,13 +4387,21 @@ enum ExtensionShims {
         return url
     }
 
+    /// The extension's button, for one that asked for its panel on a
+    /// press (openPanelOnActionClick): its panel up, or down again.
     static func openPanel(_ context: WKWebExtensionContext, owner: Extensions) {
-        guard let path = panelPath[context.uniqueIdentifier] ?? defaultPanel(context) else { return }
+        let id = context.uniqueIdentifier
+        guard !panelOff.contains(id), let path = panelPath[id] ?? defaultPanel(context) else { return }
         // Resolved, not appended: a path can carry a query — Claude's names
         // the tab its panel is for, sidepanel.html?tabId=… — which appended
         // would be escaped into the file's name.
         guard let url = ExtensionShims.page(path, in: context) else { return }
-        owner.browser?.open(url, foreground: true)
+        // In the side panel; a tab of its own if the panel can't be made,
+        // as before there was a panel to put it in.
+        guard let browser = owner.browser else { return }
+        if !browser.toggleSidePanel(context, url: url) {
+            browser.open(url, foreground: true)
+        }
     }
 
     // MARK: - bookmarks, as Chrome shapes them

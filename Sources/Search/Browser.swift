@@ -360,6 +360,10 @@ final class Browser: NSObject, ObservableObject {
     @Published var finding = false
     /// The AI panel's conversation about the page, while it is open.
     @Published var assisting: Assistant?
+    /// The side panel, beside the page (see SidePanel.swift): up or
+    /// not, and what is in it.
+    @Published var sidePanelShown = false
+    @Published var sidePanel: SidePanelContent?
     /// The Settings page it opens on next.
     var settingsPage: SettingsPanel.Page {
         get {
@@ -2885,6 +2889,8 @@ final class Browser: NSObject, ObservableObject {
         guard tab.id != activeID else { return }
         // The AI panel is about the page it was opened on.
         if assisting != nil { closeAssistant() }
+        // An extension's panel opened for one tab goes and comes with it.
+        sidePanelFollows(tab)
         // Coming back to the tab whose video is out brings it home first, so
         // it is never lifted and landed in the same breath.
         if floating == tab.id { land() }

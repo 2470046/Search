@@ -506,6 +506,10 @@ final class Extensions: NSObject, ObservableObject {
         // page, and a Mac kept awake on its behalf.
         ExtensionOffscreen.close(for: id)
         ExtensionCapture.shared.purge(id)
+        // Its side panel, and what it said about it.
+        SidePanelPages.shared.forget(id)
+        ExtensionShims.panelTabs[id] = nil
+        ExtensionShims.panelOff.remove(id)
         if let held = ExtensionShims.awake.removeValue(forKey: id) { IOPMAssertionRelease(held) }
         // Its ports read as gone only once WebKit has had a turn.
         DispatchQueue.main.async { ExtensionNative.stopOrphans() }

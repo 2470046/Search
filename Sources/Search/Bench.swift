@@ -2646,6 +2646,57 @@ final class Bench {
             if #available(macOS 15.4, *), let on = request["extensions"] as? Bool { Extensions.shared.menuOpen = on }
             answer(["ok": true])
 
+        case "sidepanel":
+            // The side panel (SidePanel.swift): what is in it, and, in a test
+            // run, JavaScript in its extension page, or closing it.
+            let web = SidePanelPages.shared.web(in: browser)
+            var content: [String: Any] = ["kind": "none"]
+            switch browser.sidePanel {
+            case .page(let id, let url, let tab): content = ["kind": "page", "extension": id, "url": url.absoluteString, "tab": tab.map { $0.uuidString } ?? ""]
+            case nil: break
+            }
+            // Where the panel's page and every page sit in the window, from
+            // its top-left corner, in points: [x, y, width, height].
+            func spot(_ view: NSView?) -> [Int] {
+                guard let view, let window = view.window else { return [] }
+                let r = view.convert(view.bounds, to: nil)
+                return [Int(r.minX), Int(window.frame.height - r.maxY), Int(r.width), Int(r.height)]
+            }
+            func webs(in view: NSView?) -> [WKWebView] {
+                guard let view else { return [] }
+                if let web = view as? WKWebView { return [web] }
+                return view.subviews.flatMap(webs)
+            }
+            let all = webs(in: (browser.window ?? Links.window)?.contentView)
+            var state: [String: Any] = ["shown": browser.sidePanelShown, "content": content, "width": Double(browser.prefs.sidePanelWidth),
+                                        "page": web?.url?.absoluteString ?? "", "title": web?.title ?? "", "loading": web?.isLoading ?? false,
+                                        "opensWindows": web?.configuration.preferences.javaScriptCanOpenWindowsAutomatically ?? false]
+            state["frame"] = spot(web)
+            state["pages"] = all.filter { $0 !== web }.map(spot)
+            state["cards"] = browser.asCards
+            state["windowWidth"] = Int((browser.window ?? Links.window)?.frame.width ?? 0)
+            state["tabs"] = browser.tabs.count
+            switch request["action"] as? String ?? "state" {
+            case "eval":
+                guard Store.testing else { answer(["error": "sidepanel eval only works on a --test run"]); return }
+                guard let web, let js = request["js"] as? String else { answer(["error": "no panel page"]); return }
+                web.evaluateJavaScript(js) { value, error in
+                    if let error { answer(["error": error.localizedDescription]) } else { answer(["value": Bench.plain(value)]) }
+                }
+            case "touch":
+                // A real click in the panel's page, as the event watcher
+                // records one (Extensions.touched). Test runs only.
+                guard Store.testing else { answer(["error": "sidepanel touch only works on a --test run"]); return }
+                if #available(macOS 15.4, *), case .page(let id, _, _) = browser.sidePanel { Extensions.touched[id] = Date() }
+                answer(state)
+            case "close":
+                guard Store.testing else { answer(["error": "sidepanel close only works on a --test run"]); return }
+                browser.closeSidePanel()
+                answer(["shown": browser.sidePanelShown])
+            default:
+                answer(state)
+            }
+
         case "extensions", "ext-add", "ext-folder", "ext-press", "ext-remove", "ext-reload", "ext-page", "ext-popup", "ext-menu", "ext-pin", "ext-shot", "ext-answer", "ext-enable", "capture", "capture-stop":
             guard #available(macOS 15.4, *) else {
                 answer(["error": "extensions need macOS 15.4"])
