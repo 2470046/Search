@@ -2612,7 +2612,7 @@ final class Bench {
                 }
                 browser.prefs.sidePosition = position
             }
-            if let on = request["pages120"] as? Bool { browser.prefs.fastPages = on }
+            if let mode = (request["pages120"] as? String).flatMap(FastPages.init) { browser.prefs.fastPages = mode }
             if let on = request["sidebar"] as? Bool { browser.prefs.sidebar = on }
             // Swipe between pages, standing in for the Mac's own setting.
             if let on = request["swipepages"] as? Bool, Store.testing { Swipe.testing = on }
