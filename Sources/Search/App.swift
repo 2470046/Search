@@ -704,6 +704,17 @@ struct ContentView: View {
         }
     }
 
+    /// The ⌃Tab switcher, small windows' moons included. Its own property:
+    /// written inline, body is more than the type checker will take.
+    private var switcherOverlay: some View {
+        TabSwitcherOverlay(
+            switcher: browser.tabSwitcher,
+            tab: { [browser] id in browser.tabs.first { $0.id == id } ?? LittleWindow.holding(id)?.tab },
+            current: browser.activeID,
+            pick: { [browser] id in browser.commitTabSwitch(picking: id) }
+        )
+    }
+
     var body: some View {
         window_
             // The column folded away, and out again at the edge (see Fold.swift).
@@ -724,7 +735,7 @@ struct ContentView: View {
             }
             .overlay { field }
             .overlay { panels }
-            .overlay { TabSwitcherOverlay(browser: browser, switcher: browser.tabSwitcher) }
+            .overlay { switcherOverlay }
             .overlay(alignment: .topTrailing) {
                 if let job = browser.fileImport { ImportProgress(browser: browser, job: job) }
             }
