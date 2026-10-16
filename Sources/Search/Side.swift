@@ -12,6 +12,8 @@ struct SideBar: View {
     /// On the window's ground, beside the page's card (see CardEdge): the
     /// ground's colour and no edge of its own, the card's edge being the line.
     var onFrame = false
+    /// The greys for that ground, handed down to every row, pin and door.
+    private var greys: Greys { onFrame ? .frame : .white }
 
     @Namespace private var pill
 
@@ -89,6 +91,7 @@ struct SideBar: View {
                 foot
             }
         }
+        .environment(\.greys, greys)
         .frame(width: prefs.sideWidth)
         .frame(maxHeight: .infinity)
         // Rows on their way to or from another space stay in the column.
@@ -96,7 +99,7 @@ struct SideBar: View {
         .onAppear { SpaceSwipe.shared.start(for: browser) }
         .background {
             ZStack {
-                landing ? Palette.sideHover : onFrame ? Palette.frame : Palette.ground
+                landing ? greys.hover : onFrame ? Palette.frame : Palette.ground
                 if prefs.splitView {
                     SplitDropZone(browser: browser, tab: nil, kind: .strip)
                 }
@@ -596,6 +599,7 @@ private struct PinGrid: Layout {
 /// its row asks for, but never taller than the classic square, so a row with
 /// room to spare turns into a wide, short button rather than a bigger icon.
 private struct PinSquare: View {
+    @Environment(\.greys) private var greys
     @ObservedObject var browser: Browser
     @ObservedObject var prefs: Preferences
     @ObservedObject var tab: Tab
@@ -634,11 +638,11 @@ private struct PinSquare: View {
                 // row is darker than the white it sits on (Drice: the live
                 // pin barely showed among the others).
                 RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
-                    .fill(Palette.sidePinLive)
+                    .fill(greys.pinLive)
                     .matchedGeometryEffect(id: "live", in: pill)
             } else {
                 RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
-                    .fill(hovering ? Palette.sideHover : Palette.sideTile)
+                    .fill(hovering ? greys.hover : greys.tile)
             }
         }
         .contentShape(RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous))
@@ -657,6 +661,7 @@ private struct PinSquare: View {
 
 /// One tab, as a line in the column.
 private struct SideRow: View {
+    @Environment(\.greys) private var greys
     @ObservedObject var browser: Browser
     @ObservedObject var prefs: Preferences
     @ObservedObject var tab: Tab
@@ -802,7 +807,7 @@ private struct SideRow: View {
     private var ground: some View {
         if live {
             ZStack(alignment: .leading) {
-                Rectangle().fill(Palette.sideWash)
+                Rectangle().fill(greys.wash)
                 if prefs.showsReading {
                     GeometryReader { geo in
                         ReadingFill(meter: tab.meter, width: geo.size.width)
@@ -813,7 +818,7 @@ private struct SideRow: View {
             .matchedGeometryEffect(id: "live", in: pill)
         } else if hovering {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Palette.sideHover)
+                .fill(greys.hover)
         }
     }
 
@@ -825,6 +830,7 @@ private struct SideRow: View {
 
 /// A row that is an action rather than a page. Quiet until the pointer is on it.
 struct Quiet: View {
+    @Environment(\.greys) private var greys
     let icon: String
     let title: String
     var height: CGFloat = 28
@@ -848,7 +854,7 @@ struct Quiet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(hovering ? Palette.sideHover : .clear)
+                    .fill(hovering ? greys.hover : .clear)
             )
             .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         }
@@ -925,6 +931,7 @@ struct Speaker: View {
 
 /// A small square holding one symbol. Lit when what it opens is open.
 struct Door: View {
+    @Environment(\.greys) private var greys
     let icon: String
     var on = false
     var help = ""
@@ -940,7 +947,7 @@ struct Door: View {
                 .frame(width: 26, height: 26)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(on ? Palette.sideWash : (hovering ? Palette.sideHover : .clear))
+                        .fill(on ? greys.wash : (hovering ? greys.hover : .clear))
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }

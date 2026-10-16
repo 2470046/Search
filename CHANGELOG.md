@@ -11,6 +11,10 @@ in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Added
+
+- The page as a card can be turned off, in Settings › Tabs › The page as a card, beside the sidebar's settings. Off, the page reaches the window's edges and the column is white with its fine line, as before 1.0.5. It stays on unless you turn it off. Asked for on [#607](https://github.com/driceroland/Search/issues/607)
+
 ### Changed
 
 - A bookmark opens in a tab of its own, from the bookmarks bar, the Bookmarks menu or the list: opened from a pinned tab it used to take the pin's place. An empty new tab is used as it is, and ⌘ opens the bookmark behind the tab you are on.
@@ -23,6 +27,8 @@ in [ROADMAP.md](ROADMAP.md).
 - A folded column comes out on the tab you are on, as it was meant to: with more tabs than the window holds, the scroll to it could be lost as the column slid out, and the tab could be out of sight. Thanks [@oddharsh](https://github.com/oddharsh) ([#599](https://github.com/driceroland/Search/pull/599))
 - Shortcuts Search reads itself, rather than through its menus, work with a Russian, Greek or any other non-Latin keyboard layout on: ⌘W in the small window, for one, did nothing. They were matched by the character the key types, Ц instead of W; they are now read through the Latin layout that goes with it, as macOS reads the menus' own. Latin layouts, AZERTY included, are unchanged. Thanks [@hnnsly](https://github.com/hnnsly)
 - A sideways scroll swipes back or forward only when the Mac's own Swipe between pages is on, in System Settings › Trackpad or › Mouse, as in Safari. With it off, a one-finger Magic Mouse scroll inside a page such as a Google Sheet went back a page once the sheet's edge was reached. Thanks [@nourspace](https://github.com/nourspace) for reporting and [@karadoganyi](https://github.com/karadoganyi) for the fix ([#464](https://github.com/driceroland/Search/issues/464), [#467](https://github.com/driceroland/Search/pull/467))
+- With the window in full screen, the page goes edge to edge: no room around it and no rounded corners, as with a video filling the screen. Out of full screen, the card comes back. Asked for on [#607](https://github.com/driceroland/Search/issues/607)
+- The column's greys stay on the strip across the top, in Settings and in the panels: the live tab of a Split View pair, a tab group's name and the buttons there took the darker greys made for the column beside the card.
 
 ### Held back
 

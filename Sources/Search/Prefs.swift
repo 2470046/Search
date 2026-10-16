@@ -83,6 +83,13 @@ final class Preferences: ObservableObject {
     @Published var sideWidth: CGFloat {
         didSet { store.set(Double(sideWidth), forKey: "sidebar.width") }
     }
+    /// With the tabs down the side, the page as a card: a little room
+    /// around it and rounded corners (see CardEdge). On unless turned off,
+    /// since 1.0.5 shipped with it; off, the page reaches the window's edges
+    /// and the column is white with its hairline, as before 1.0.5 (#607).
+    @Published var cards: Bool {
+        didSet { store.set(cards, forKey: "layout.cards") }
+    }
     @Published var glyph: Glyph {
         didSet { store.set(glyph.rawValue, forKey: "glyph") }
     }
@@ -381,6 +388,7 @@ final class Preferences: ObservableObject {
         sideHides = store.bool(forKey: "sidebar.hides")
         let width = store.object(forKey: "sidebar.width") as? Double ?? Double(Metrics.side)
         sideWidth = min(Metrics.sideMax, max(Metrics.sideMin, CGFloat(width)))
+        cards = store.object(forKey: "layout.cards") as? Bool ?? true
         glyph = store.string(forKey: "glyph").flatMap(Glyph.init) ?? .letters
         engine = store.string(forKey: "search.engine").flatMap(Engine.init) ?? .standard
         customEngine = store.string(forKey: "search.custom") ?? ""

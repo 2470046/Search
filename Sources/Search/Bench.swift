@@ -703,6 +703,9 @@ final class Bench {
             out["folded"] = browser.folded
             out["peeking"] = browser.peeking
             out["sideHides"] = browser.prefs.sideHides
+            // The page as a card (see Browser.asCards), and what it is made of.
+            out["cards"] = ["switch": browser.prefs.cards, "fullScreen": browser.fullScreen, "on": browser.asCards,
+                            "windowFullScreen": (browser.window ?? Links.window)?.styleMask.contains(.fullScreen) ?? false]
             out["lightsHidden"] = Fold.titlebar?.isHidden ?? false
             out["siteCard"] = SiteCardPanel.isShown
             // Whether this Mac lets the browser use its passkeys at all — the
@@ -2538,6 +2541,7 @@ final class Bench {
             if let on = request["swipepages"] as? Bool, Store.testing { Swipe.testing = on }
             if let on = request["spaces"] as? Bool { browser.prefs.usesSpaces = on }
             if let on = request["hides"] as? Bool { browser.prefs.sideHides = on }
+            if let on = request["cards"] as? Bool { browser.prefs.cards = on }
             if let on = request["folded"] as? Bool { browser.folded = on }
             // The window's own full screen as the chrome sees it, without
             // the window going there: a test run never takes the screen.

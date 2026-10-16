@@ -99,6 +99,7 @@ struct SplitTabItem: View {
 }
 
 private struct SplitTabHalf: View {
+    @Environment(\.greys) private var greys
     @ObservedObject var browser: Browser
     @ObservedObject var prefs: Preferences
     @ObservedObject var tab: Tab
@@ -165,7 +166,7 @@ private struct SplitTabHalf: View {
     private var ground: some View {
         if focused {
             ZStack(alignment: .leading) {
-                Rectangle().fill(Palette.sideWash)
+                Rectangle().fill(greys.wash)
                 if prefs.showsReading, !narrow {
                     GeometryReader { geo in
                         ReadingFill(meter: tab.meter, width: geo.size.width)
@@ -176,7 +177,7 @@ private struct SplitTabHalf: View {
             .matchedGeometryEffect(id: "live", in: pill)
         } else if hovering {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Palette.sideHover)
+                .fill(greys.hover)
         }
     }
 

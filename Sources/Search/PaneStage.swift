@@ -243,7 +243,7 @@ final class PaneStage: NSView {
         effectiveAppearance.performAsCurrentDrawingAppearance {
             let edge = NSColor.labelColor.withAlphaComponent(CardEdge.edge).cgColor
             let ground = Palette.NS.ground.cgColor
-            if card { layer?.backgroundColor = NSColor.clear.cgColor }
+            layer?.backgroundColor = card ? NSColor.clear.cgColor : ground
             for slot in slots {
                 slot.layer?.borderWidth = card ? 1 : 0
                 slot.layer?.borderColor = edge

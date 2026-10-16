@@ -411,6 +411,13 @@ struct SettingsPanel: View {
                 Line("Hide the sidebar until the pointer reaches the edge", "The page takes the whole window; push against its \(prefs.sidePosition.rawValue) edge for the tabs. ⌘S keeps them out.") {
                     Switch(on: $prefs.sideHides)
                 }
+                Rule()
+                Line("The page as a card", "A little room around the page, with rounded corners. Off, the page reaches the window's edges") {
+                    Switch(on: Binding(
+                        get: { prefs.cards },
+                        set: { on in withAnimation(Motion.glide) { prefs.cards = on } }
+                    ))
+                }
             }
             Rule()
             Line("Tabs show", "Beside the title, and on a pinned square") {
