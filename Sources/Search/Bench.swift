@@ -2622,6 +2622,7 @@ final class Bench {
             // "ask": the real question again, as a person gets it.
             if request["confirm"] as? String == "ask" { Ask.testing = nil }
             if let on = request["spaces"] as? Bool { browser.prefs.usesSpaces = on }
+            if let on = request["groups"] as? Bool, Store.testing { browser.prefs.usesTabGroups = on }
             if let on = request["sharedpins"] as? Bool { browser.prefs.sharesPins = on }
             if let on = request["hides"] as? Bool { browser.prefs.sideHides = on }
             if let on = request["cards"] as? Bool { browser.prefs.cards = on }

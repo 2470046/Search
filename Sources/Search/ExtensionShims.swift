@@ -3352,11 +3352,11 @@ enum ExtensionShims {
         }
     }
 
-    /// The groups an extension is shown: none while groups are off, and
-    /// never one without a tab.
+    /// The groups an extension is shown: never one without a tab. The same
+    /// with groups off in Settings, where they are kept without a heading
+    /// in the column (see the tab groups cases in `run`).
     private static func listedGroups(_ browser: Browser) -> [TabGroup] {
-        guard browser.prefs.usesTabGroups else { return [] }
-        return browser.tabGroups.filter { !browser.tabs(in: $0.id).isEmpty }
+        browser.tabGroups.filter { !browser.tabs(in: $0.id).isEmpty }
     }
 
     private static func listedGroup(_ number: Any?, in browser: Browser) throws -> TabGroup {
@@ -4136,12 +4136,16 @@ enum ExtensionShims {
             }
 
         // MARK: tab groups
-        // Only while they are on (Settings › Tabs): off, they sleep, for
-        // extensions as on screen. A group without a tab is never shown.
+        // Groups off in Settings › Tabs, an extension's groups are still
+        // made and kept, as Chrome would, but the column shows no heading
+        // for them, as for any group while they are off; turned on, they
+        // are there. Claude in Chrome works only in a group of its own: a
+        // refusal here left it unable to act on any tab. A group without a
+        // tab is never shown.
         case "tabs.groups":
             let places: [Any] = first as? [Any] ?? []
             return places.map { place -> Int in
-                guard browser.prefs.usesTabGroups, let tab = located(place, owner: owner),
+                guard let tab = located(place, owner: owner),
                       let home = owner.browser(of: tab), let group = home.group(of: tab) else { return -1 }
                 return TabGroup.number(group)
             }
@@ -4163,7 +4167,6 @@ enum ExtensionShims {
         case "tabGroups.move":
             throw Unsupported(what: "Search can't move a tab group for an extension")
         case "tabs.group":
-            guard browser.prefs.usesTabGroups else { throw Unsupported(what: "Tab groups are off in Search's settings") }
             let places: [Any] = first as? [Any] ?? []
             let tabs = places.compactMap { located($0, owner: owner) }
             guard !tabs.isEmpty else { throw Unsupported(what: "No tabs to group") }
@@ -4186,7 +4189,6 @@ enum ExtensionShims {
             for tab in tabs { browser.move(tab, toGroup: target) }
             return TabGroup.number(target)
         case "tabs.ungroup":
-            guard browser.prefs.usesTabGroups else { return nil }
             let places: [Any] = first as? [Any] ?? []
             for tab in places.compactMap({ located($0, owner: owner) }) {
                 owner.browser(of: tab)?.move(tab, toGroup: nil)
