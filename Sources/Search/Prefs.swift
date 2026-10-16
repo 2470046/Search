@@ -441,6 +441,12 @@ final class Preferences: ObservableObject {
     @Published var splitView: Bool {
         didSet { store.set(splitView, forKey: "splitView") }
     }
+    /// ⌃W, ⌃R, ⌃M and ⌃O on the ⌃Tab switcher's card picked, with the keys
+    /// listed under the tabs (see TabSwitcher.Action). Off unless asked for:
+    /// the switcher everyone uses stays as it was.
+    @Published var switcherKeys: Bool {
+        didSet { store.set(switcherKeys, forKey: "switcher.keys") }
+    }
     /// "settings", "new tab" and the like, typed alone in the address field,
     /// reach that part of the app instead of asking a search engine for the
     /// word (see AddressCommands.swift). Off unless asked for.
@@ -550,6 +556,7 @@ final class Preferences: ObservableObject {
         pinsGoHome = store.bool(forKey: "pins.home")
         sharesPins = store.bool(forKey: "pins.shared")
         splitView = store.bool(forKey: "splitView")
+        switcherKeys = store.bool(forKey: "switcher.keys")
         ai = AI.shipped && store.bool(forKey: "ai")
         aiProvider = store.string(forKey: "ai.provider").flatMap(AIProvider.init(rawValue:))
         aiModels = store.dictionary(forKey: "ai.models") as? [String: String] ?? [:]
