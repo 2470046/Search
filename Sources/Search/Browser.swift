@@ -4361,7 +4361,7 @@ final class Browser: NSObject, ObservableObject {
         // The middle button on a link opens it beside the tab you are on, as
         // it does in every other browser (see MiddleRelay).
         // From a private tab, the new one is private too, as for ⌘-click.
-        tab.onMiddleClick = { [weak self] tab, url in self?.open(url, foreground: false, from: tab, mayWait: true) }
+        tab.onMiddleClick = { [weak self] tab, url in self?.openClicked(url, foreground: false, from: tab, view: tab.built) }
         tab.onCross = { [weak self] tab, url in self?.replace(tab, going: url) }
 
         // The caret in a sign-in box: the accounts kept for this site hang
@@ -4936,7 +4936,7 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         if action.navigationType == .linkActivated,
            ["http", "https"].contains(scheme),
            action.modifierFlags.contains(.command) {
-            open(url, foreground: action.modifierFlags.contains(.shift), from: tab(for: webView), mayWait: true)
+            openClicked(url, foreground: action.modifierFlags.contains(.shift), from: tab(for: webView), view: webView)
             decisionHandler(.cancel)
             return
         }
@@ -5077,6 +5077,7 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         tab.popup = windowFeatures.width != nil || windowFeatures.height != nil
             || windowFeatures.toolbarsVisibility?.boolValue == false
         tab.opener = from
+        opener.popupGesture.opened(tab.id)
         // The link menu's Open Link in New Tab: behind this tab, where a
         // ⌘-click's goes (see open(_:foreground:)).
         if (webView as? PageView)?.takeBehind() == true, let source = self.tab(for: webView) {
@@ -5092,6 +5093,22 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         // request into it itself when the action carries one.
         if let url = action.request.url { tab.setAddressOptimistically(url) }
         return tab.web
+    }
+
+    /// A link clicked open in a tab by Search itself (⌘-click, the middle
+    /// button): one click, one tab. When the page's own script already
+    /// opened a window for that click, it is the tab — put where the click
+    /// asked, behind unless ⇧ was held — and no second one opens. Otherwise
+    /// the click is spent, and a window.open after it gets nothing.
+    private func openClicked(_ url: URL, foreground: Bool, from source: Tab?, view: WKWebView?) {
+        let opener = view.flatMap { popupTab(for: $0) }
+        if let made = opener?.popupGesture.claim(), let tab = tabs.first(where: { $0.id == made }) {
+            if !foreground, activeID == tab.id, let source, tabs.contains(where: { $0.id == source.id }) {
+                activeID = source.id
+            }
+            return
+        }
+        open(url, foreground: foreground, from: source, mayWait: true)
     }
 
     /// Anything the window can't show is something to keep instead.

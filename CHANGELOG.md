@@ -42,6 +42,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Fixed
 
+- A link ⌘-clicked or middle-clicked in Gmail opens one tab, not two. Gmail's links open by themselves and its page opens them a second time from the same click; Search's own tab for the ⌘-click came on top of the page's. One click now makes one tab, kept behind as a ⌘-click asks, and a window the page opens after it is refused
 - Leaving a video's full screen, on YouTube or anywhere, the window no longer corrects itself four or five times in a row: the tabs, the page's card, the bookmarks bar, the side panel and Split View's other page come back at once, while the video is still on its way home, and the page is laid out once, at its own size. Going full screen, the page no longer grows in the window a moment before the video leaves it
 - Claude in Chrome signs in: approving it on claude.ai no longer spins for good. A website's message to an extension that isn't installed now fails as it does in Chrome, so claude.ai goes on to the Claude extension you have. Its tab groups are kept with tab groups off too, where it needs them to work on a page, without a heading in the sidebar
 - A pin moved to another space with Move to Space stays there. Moved to a space you didn't open before quitting, it was gone after a relaunch. Thanks [@karadoganyi](https://github.com/karadoganyi) ([#587](https://github.com/driceroland/Search/pull/587))
