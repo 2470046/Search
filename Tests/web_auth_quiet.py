@@ -58,6 +58,32 @@ class Provider(BaseHTTPRequestHandler):
         elif path == "/elsewhere":
             status = 302
             headers.append(("Location", "https://abcdefghijklmnopabcdefghijklmnop.chromiumapp.org/cb?code=stolen"))
+        elif path == "/plainhttp":
+            status = 302
+            headers.append(("Location", f"http://{EXT['id']}.chromiumapp.org/cb?code=plain"))
+        elif path == "/sneaky":
+            # Other chromiumapp.org shapes: none may load, the flow just fails.
+            status = 302
+            headers.append(("Location", f"https://{EXT['id']}.chromiumapp.org.evil.test/cb?code=sneaky"))
+        elif path == "/report":
+            # What the page out of sight may do, sent back on the redirect.
+            body = f"""<!doctype html><title>report</title><script>
+(async () => {{
+  const r = {{}};
+  r.pk = typeof window.PublicKeyCredential;
+  try {{ await navigator.credentials.get({{publicKey: {{challenge: new Uint8Array(16)}}}}); r.webauthn = 'answered'; }}
+  catch (e) {{ r.webauthn = e.name; }}
+  const media = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+    ? Promise.race([navigator.mediaDevices.getUserMedia({{audio: true}}).then(() => 'granted', e => e.name),
+                    new Promise(ok => setTimeout(() => ok('held'), 1500))])
+    : Promise.resolve('none');
+  r.mic = await media;
+  const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=');
+  r.play = await Promise.race([a.play().then(() => 'played', e => e.name), new Promise(ok => setTimeout(() => ok('held'), 1000))]);
+  r.prompt = String(prompt('x', 'y'));
+  location = '{back}?r=' + encodeURIComponent(JSON.stringify(r));
+}})();
+</script>"""
         elif path == "/noisy":
             body = "<!doctype html><title>noisy</title><script>window.open('about:blank'); alert('hi'); confirm('?')</script>"
         self.send_response(status)
@@ -144,6 +170,30 @@ def main():
         r = flow(page, {"url": f"{SITE}/elsewhere", "interactive": False})
         print("  another id's address:", r)
         t.ok("quiet: another extension's address is no answer", r and "error" in r and "stolen" not in json.dumps(r), r)
+
+        r = flow(page, {"url": f"{SITE}/plainhttp", "interactive": False, "abortOnLoadForNonInteractive": False,
+                        "timeoutMsForNonInteractive": 8000})
+        print("  own id over http:", r)
+        t.ok("quiet: its own address over http is no answer, and fails at once",
+             r and "error" in r and "plain" not in json.dumps(r) and r.get("ms", 9999) < 4000, r)
+
+        r = flow(page, {"url": f"{SITE}/sneaky", "interactive": False})
+        t.ok("quiet: <id>.chromiumapp.org.<elsewhere> is no answer", r and "error" in r and "sneaky" not in json.dumps(r), r)
+
+        r = flow(page, {"url": f"{SITE}/report", "interactive": False, "abortOnLoadForNonInteractive": False,
+                        "timeoutMsForNonInteractive": 15000})
+        print("  what the page may do:", r)
+        got = {}
+        try:
+            from urllib.parse import urlparse, parse_qs
+            got = json.loads(parse_qs(urlparse(r["ok"]).query)["r"][0])
+        except Exception:
+            pass
+        t.ok("quiet: no passkey object for the page", got.get("pk") == "undefined", got)
+        t.ok("quiet: a passkey request is refused, not handed to WebKit", got.get("webauthn") == "NotAllowedError", got)
+        t.ok("quiet: the microphone is refused (or never asked)", got.get("mic") in ("NotAllowedError", "held", "none"), got)
+        t.ok("quiet: no sound plays", got.get("play") in ("NotAllowedError", "held"), got)
+        t.ok("quiet: prompt() answers nothing", got.get("prompt") == "null", got)
 
         r = flow(page, {"url": f"{SITE}/noisy", "interactive": False, "abortOnLoadForNonInteractive": False,
                         "timeoutMsForNonInteractive": 2000})
