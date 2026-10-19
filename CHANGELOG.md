@@ -92,6 +92,7 @@ in [ROADMAP.md](ROADMAP.md).
 - The built-in blocker matches whole domain names: a rule for segment.com no longer blocks unrelated names such as segment.company. Subdomains and explicit ports still match. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#626](https://github.com/driceroland/Search/pull/626), [#622](https://github.com/driceroland/Search/issues/622))
 - ⌘T puts the caret in the address field every time, and what you type straight after it lands there. The field could arrive a moment after it was asked for the keys, more often with Split View on, and then the request went nowhere: no caret, and typing did nothing until you clicked the field. Letters typed before the field arrived went missing too; they now wait for it. Thanks [@oddharsh](https://github.com/oddharsh) ([#635](https://github.com/driceroland/Search/pull/635))
 - Extension popups such as Google Translate keep their width when the Mac always shows scrollbars, instead of shrinking to a narrow strip ([#648](https://github.com/driceroland/Search/pull/648), [#645](https://github.com/driceroland/Search/issues/645))
+- Twitch's chat is open again when the floating video comes back to its tab, as it was when the video went out. In its Studio mode, Twitch folds the chat away in a page as small as the little window and never opens it again by itself ([#642](https://github.com/driceroland/Search/pull/642))
 
 ### Held back
 

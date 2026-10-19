@@ -1072,13 +1072,15 @@ enum Isolate {
       // And where the video was in the page, at what size of page, for the
       // landing to wait for (see off). Not while the last float is still
       // landing: the page isn't as it was yet, and the place it is going
-      // back to is the one kept from before.
+      // back to is the one kept from before. And whether Twitch's chat was
+      // open, for opening it again (see off).
       var wait = window.__officeFloatWait;
       if (!window.__officeFloatHome || !(window.__officeFloatLanding || (wait && wait.landing && !wait.settled))) {
         window.__officeFloatHome = {
           box: [r.left + scrollX, r.top + scrollY, r.width, r.height],
           size: [best.offsetWidth, best.offsetHeight],
-          wide: innerWidth, high: innerHeight
+          wide: innerWidth, high: innerHeight,
+          chat: !!document.querySelector('.right-column:not(.right-column--collapsed) [data-a-target="right-column__toggle-collapse-btn"]')
         };
       }
       var size = window.__officeFloatHome.size;
@@ -1298,6 +1300,25 @@ enum Isolate {
         var video = document.querySelector('[data-office-float]');
         if (video) video.removeAttribute('data-office-float');
         settle(video);
+        reopen();
+      }
+      // Twitch, in its Studio mode, folds its chat away in a page as narrow as
+      // the little window, and opens it again only when asked: back in its
+      // tab, the chat stayed shut. Asked here, if it was open as the video
+      // went out, once the page is the tab's size again.
+      function reopen() {
+        var home = window.__officeFloatHome;
+        if (!home || !home.chat || root.classList.contains('office-floating')) return;
+        if (innerWidth === wide && innerHeight === high) {
+          // Put back by the clock, its tab not in front: once it is.
+          addEventListener('resize', function again() {
+            removeEventListener('resize', again);
+            reopen();
+          });
+          return;
+        }
+        var shut = document.querySelector('.right-column--collapsed [data-a-target="right-column__toggle-collapse-btn"]');
+        if (shut) shut.click();
       }
       // The tab covers the page with a picture of it as it was left, until
       // it is that again (Browser.land). Put back, the page still has the
