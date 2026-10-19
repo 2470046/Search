@@ -2905,6 +2905,53 @@ final class Bench {
                 answer(state)
             }
 
+        case "popups":
+            // The windows a tab's page was refused, as its sign offers them
+            // (BlockedPopups.swift), and the sites allowed. open (newest is
+            // 0), allow and remove do what the sign and Settings › Privacy
+            // do: test runs only, they open tabs and change settings.
+            let action = request["action"] as? String ?? "state"
+            guard Store.testing || ["state", "sites"].contains(action) else {
+                answer(["error": "popups \(action) only works on a --test run"]); return
+            }
+            let sites: () -> [String: Any] = { ["allowed": browser.prefs.popupSites.sorted()] }
+            if action == "sites" { answer(sites()); return }
+            if action == "remove" {
+                guard let site = request["site"] as? String else { answer(["error": "popups remove needs a site"]); return }
+                browser.prefs.popupSites.remove(site)
+                answer(sites()); return
+            }
+            guard let tab = find(request, in: browser) else { answer(missing(request)); return }
+            let state: () -> [String: Any] = {
+                [
+                    "blocked": tab.blockedPopups.map { $0.url?.absoluteString ?? "" },
+                    "openable": tab.blockedPopups.map { BlockedPopups.openable($0.url) != nil },
+                    "sign": !tab.blockedPopups.isEmpty,
+                    "site": BlockedPopups.site(of: tab.pageAddress) ?? "",
+                    "allowed": browser.prefs.popupSites.sorted(),
+                    "tabAllowed": tab.popupSites.sorted(),
+                ]
+            }
+            switch action {
+            case "state": answer(state())
+            case "open":
+                let index = request["index"] as? Int ?? 0
+                let newest = Array(tab.blockedPopups.reversed())
+                guard newest.indices.contains(index) else { answer(["error": "no blocked pop-up \(index)"]); return }
+                let opened = browser.openBlocked(newest[index], from: tab)
+                var reply = state()
+                if let opened {
+                    reply["opened"] = describe(opened)
+                    reply["openedOpener"] = opened.opener?.uuidString ?? ""
+                }
+                answer(reply)
+            case "allow":
+                browser.allowPopups(from: tab)
+                answer(state())
+            default:
+                answer(["error": "popups state|open|allow|remove|sites"])
+            }
+
         case "extensions", "ext-add", "ext-folder", "ext-press", "ext-remove", "ext-reload", "ext-page", "ext-popup", "ext-menu", "ext-pin", "ext-shot", "ext-answer", "ext-enable", "capture", "capture-stop":
             guard #available(macOS 15.4, *) else {
                 answer(["error": "extensions need macOS 15.4"])
@@ -2914,7 +2961,7 @@ final class Bench {
 
         default:
             answer(["error": "unknown command “\(verb)”", "commands": [
-                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications",
+                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups",
             ]])
         }
     }

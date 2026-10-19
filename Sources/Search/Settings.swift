@@ -659,6 +659,7 @@ struct SettingsPanel: View {
                     Switch(on: $prefs.siteNotifications)
                 }
                 NotificationSites()
+                PopupSiteList(prefs: prefs)
             }
             Card {
                 Line("History", "Every address you have been to") {

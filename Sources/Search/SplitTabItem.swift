@@ -231,6 +231,9 @@ private struct SplitTabHalf: View {
                         .font(.system(size: 9))
                         .foregroundStyle(Palette.muted)
                 }
+                if !narrow {
+                    PopupSign(browser: browser, tab: tab)
+                }
                 // The page is asking something, over its half of the stage.
                 if browser.paneQuestions.contains(where: { $0.tab == tab.id }) {
                     Circle()

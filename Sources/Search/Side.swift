@@ -729,6 +729,8 @@ private struct SideRow: View {
                             .foregroundStyle(colour.opacity(0.8))
                             .help("Recording")
                     }
+                    // A window the page asked for was refused (BlockedPopups).
+                    PopupSign(browser: browser, tab: tab, colour: colour)
                     Text(tab.label)
                         .font(.system(size: prefs.sideTitle))
                         .lineLimit(1)
@@ -804,6 +806,7 @@ private struct SideRow: View {
         }
         .animation(Motion.quick, value: tab.loading)
         .animation(Motion.quick, value: speaker)
+        .animation(Motion.quick, value: tab.blockedPopups.isEmpty)
         .background { ground }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {

@@ -172,6 +172,12 @@ final class Preferences: ObservableObject {
     @Published var awakeSites: Set<String> {
         didSet { store.set(Array(awakeSites).sorted(), forKey: "tabs.awakeSites") }
     }
+    /// Sites whose pages may open windows without a click just before
+    /// (BlockedPopups.swift), each a registrable domain. Empty until you
+    /// choose Always Allow on one; Settings › Privacy lists them.
+    @Published var popupSites: Set<String> {
+        didSet { store.set(Array(popupSites).sorted(), forKey: "privacy.popupSites") }
+    }
     /// Tabs nobody has looked at for half an hour give their page back and
     /// keep where they were. On unless turned off.
     @Published var sleepsTabs: Bool {
@@ -525,6 +531,7 @@ final class Preferences: ObservableObject {
             .flatMap { try? JSONDecoder().decode([Keyword].self, from: $0) } ?? []
         keepsSitesAwake = store.bool(forKey: "tabs.keepAwake")
         awakeSites = Set(store.stringArray(forKey: "tabs.awakeSites") ?? [])
+        popupSites = Set(store.stringArray(forKey: "privacy.popupSites") ?? [])
         sleepsTabs = store.object(forKey: "tabs.sleep") as? Bool ?? true
         tabLife = TabLife(rawValue: store.integer(forKey: "tabs.close.after")) ?? .never
         sleepPace = SleepPace.chosen
