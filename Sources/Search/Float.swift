@@ -1082,6 +1082,15 @@ enum Isolate {
         };
       }
       var size = window.__officeFloatHome.size;
+      // And the picture in it, as `contain` fits it. Twitch's player, in its
+      // Studio mode, gives the video the page's whole height and draws the
+      // picture in the middle of it, between black bars: scaled whole, the
+      // bars took up the little window, and the picture a part of it.
+      var shown = size;
+      if (vw && vh && size[0] && size[1]) {
+        var within = Math.min(size[0] / vw, size[1] / vh);
+        shown = [vw * within, vh * within];
+      }
 
       // A landing still waiting for its tab is called off: the page is out
       // again.
@@ -1112,7 +1121,8 @@ enum Isolate {
         'opacity:1 !important; object-fit:contain !important; z-index:2147483647 !important}',
         // Better, where WebKit can divide one length by another: the video
         // keeps the size it had in its tab, and is only scaled to the
-        // window, as large as it goes whole and in the middle. Made the
+        // window, its picture as large as it goes whole and in the middle,
+        // and whatever is around the picture off the window's edges. Made the
         // window's size, its picture is redrawn at that size by another of
         // WebKit's processes a third of a second after everything else, and
         // until then it showed at its old size shrunk with the page, in a
@@ -1120,7 +1130,7 @@ enum Isolate {
         size[0] && size[1] ? [
           '@supports (scale: calc(100vw / 1px)) {',
           'html.office-floating [data-office-float] {',
-          '--office-float-by: min(calc(100vw / ' + size[0] + 'px), calc(100vh / ' + size[1] + 'px));',
+          '--office-float-by: min(calc(100vw / ' + shown[0] + 'px), calc(100vh / ' + shown[1] + 'px));',
           'right:auto !important; bottom:auto !important; margin:0 !important; box-sizing:border-box !important;',
           'width:' + size[0] + 'px !important; height:' + size[1] + 'px !important;',
           'min-width:0 !important; min-height:0 !important; transform-origin:0 0 !important;',
