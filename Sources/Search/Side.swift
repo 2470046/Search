@@ -635,18 +635,21 @@ private struct PinSquare: View {
         .frame(width: scale * 16 / 34, height: scale * 16 / 34)
         .frame(width: width, height: height)
         .background {
-            if live {
-                // Darker than the resting squares' grey by as much as a live
-                // row is darker than the white it sits on (Drice: the live
-                // pin barely showed among the others).
-                RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
-                    .fill(greys.pinLive)
-                    .matchedGeometryEffect(id: "live", in: pill)
-            } else {
-                RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
-                    .fill(browser.selectedTabIDs.contains(tab.id) ? greys.wash :
-                          hovering ? greys.hover : greys.tile)
+            Group {
+                if live {
+                    // Darker than the resting squares' grey by as much as a live
+                    // row is darker than the white it sits on (Drice: the live
+                    // pin barely showed among the others).
+                    RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
+                        .fill(greys.pinLive)
+                        .matchedGeometryEffect(id: "live", in: pill)
+                } else {
+                    RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous)
+                        .fill(browser.selectedTabIDs.contains(tab.id) ? greys.wash :
+                              hovering ? greys.hover : greys.tile)
+                }
             }
+            .animation(Motion.quick, value: live)
         }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
@@ -807,7 +810,7 @@ private struct SideRow: View {
         .animation(Motion.quick, value: tab.loading)
         .animation(Motion.quick, value: speaker)
         .animation(Motion.quick, value: tab.blockedPopups.isEmpty)
-        .background { ground }
+        .background { ground.animation(Motion.quick, value: live) }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)

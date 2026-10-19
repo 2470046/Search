@@ -124,7 +124,7 @@ private struct SplitTabHalf: View {
             .padding(.trailing, stacked ? 7 : 4)
             .frame(height: stacked ? height : 28)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background { ground }
+            .background { ground.animation(Motion.quick, value: stacked && focused) }
             .frame(height: height)
             .contentShape(Rectangle())
     }

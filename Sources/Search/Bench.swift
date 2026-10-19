@@ -2499,6 +2499,9 @@ final class Bench {
             guard let window = browser.window ?? Links.window, let frame = window.contentView?.superview,
                   let path = request["path"] as? String, !path.isEmpty
             else { answer(["error": "film needs something to do and a path"]); return }
+            if request["action"] as? String == "select", find(request, in: browser) == nil {
+                answer(missing(request)); return
+            }
             let count = min(60, max(1, request["frames"] as? Int ?? 14))
             let every = min(0.5, max(0.01, request["every"] as? Double ?? 0.03))
             // The column's corner — the lights, the pins, the first rows — is
@@ -2544,6 +2547,7 @@ final class Bench {
             case "peek": browser.peek(true)
             case "unpeek": browser.peek(false)
             case "fold": browser.toggleFold()
+            case "select": if let tab = find(request, in: browser) { browser.select(tab) }
             default: break
             }
 
