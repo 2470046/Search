@@ -226,6 +226,12 @@ final class Preferences: ObservableObject {
     @Published var searchesSites: Bool {
         didSet { store.set(searchesSites, forKey: "search.sites") }
     }
+    /// Suggestions from the search engine under the address field, as you
+    /// type (see EngineSuggest.swift). Off unless asked for: what is typed
+    /// is sent to the engine while it is typed.
+    @Published var engineSuggests: Bool {
+        didSet { store.set(engineSuggests, forKey: "search.suggest") }
+    }
     @Published var showsReading: Bool {
         didSet { store.set(showsReading, forKey: "tabs.reading") }
     }
@@ -540,6 +546,7 @@ final class Preferences: ObservableObject {
         newTabPlace = store.string(forKey: "tabs.newPlace").flatMap(NewTabPlace.init(rawValue:)) ?? .next
         startsFresh = store.bool(forKey: Preferences.freshKey)
         searchesSites = store.bool(forKey: "search.sites")
+        engineSuggests = store.bool(forKey: "search.suggest")
         siteNotifications = store.object(forKey: "notifications.ask") as? Bool ?? true
         showsReading = store.object(forKey: "tabs.reading") as? Bool ?? true
         shielded = store.object(forKey: "shield") as? Bool ?? true

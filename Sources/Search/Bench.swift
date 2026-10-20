@@ -1093,6 +1093,54 @@ final class Bench {
             default: answer(state())
             }
 
+        case "suggest":
+            // The engine's suggestions under the field (EngineSuggest.swift):
+            // the rows, how many questions went out, were let go of or were
+            // too slow, and a row taken as a click takes it. Only on a
+            // SEARCH_PROBE run.
+            guard Store.testing else { answer(["error": "suggest only works on a --test run"]); return }
+            func kind(_ offer: Suggestion) -> String {
+                switch offer.kind {
+                case .suggested: "suggested"
+                case .search: "search"
+                case .open: "open"
+                case .visited: "visited"
+                case .known: "known"
+                case .command: "command"
+                }
+            }
+            func state(_ extra: [String: Any] = [:]) -> [String: Any] {
+                var out: [String: Any] = [
+                    "typed": browser.typed, "editing": browser.editing,
+                    "offers": browser.offers.map { [$0.key, kind($0), $0.url.absoluteString] },
+                    "asked": browser.suggester.asked, "cancelled": browser.suggester.cancelled,
+                    "tooSlow": browser.suggester.tooSlow,
+                    "on": browser.prefs.engineSuggests, "shy": browser.active?.shy ?? false,
+                    "address": browser.active?.address?.absoluteString ?? "",
+                    "pending": browser.active?.pending?.absoluteString ?? "",
+                ]
+                out.merge(extra) { _, new in new }
+                return out
+            }
+            if let on = request["on"] as? Bool { browser.prefs.engineSuggests = on }
+            switch request["action"] as? String ?? "state" {
+            case "take":
+                let index = request["index"] as? Int ?? 0
+                guard browser.offers.indices.contains(index) else { answer(state(["error": "no row \(index)"])); return }
+                browser.take(browser.offers[index])
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { answer(state()) }
+            case "walk":
+                browser.walk(request["step"] as? Int ?? 1)
+                answer(state(["picked": browser.picked ?? -1, "completed": browser.completed]))
+            case "go":
+                browser.submit()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { answer(state()) }
+            case "esc": browser.dismiss(); answer(state())
+            case "sendable":
+                answer(["sendable": EngineSuggest.sendable(request["text"] as? String ?? "")])
+            default: answer(state())
+            }
+
         case "sitesearch":
             // Search a site from the address field (SiteSearch.swift): what
             // it offers and holds, Tab, ⌫ in an empty field, Esc, Return,
@@ -2987,7 +3035,7 @@ final class Bench {
 
         default:
             answer(["error": "unknown command “\(verb)”", "commands": [
-                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups",
+                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups", "suggest",
             ]])
         }
     }
