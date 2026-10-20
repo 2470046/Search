@@ -94,6 +94,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Extension popups such as Google Translate keep their width when the Mac always shows scrollbars, instead of shrinking to a narrow strip ([#648](https://github.com/driceroland/Search/pull/648), [#645](https://github.com/driceroland/Search/issues/645))
 - Twitch's chat is open again when the floating video comes back to its tab, as it was when the video went out. In its Studio mode, Twitch folds the chat away in a page as small as the little window and never opens it again by itself ([#642](https://github.com/driceroland/Search/pull/642))
 - The column's tab highlight reaches the tab you pick sooner, with the quick motion and no spring trailing behind when you switch fast. Reduce Motion still makes it immediate ([#649](https://github.com/driceroland/Search/pull/649), [#466](https://github.com/driceroland/Search/issues/466))
+- Showing the list of saved accounts under a sign-in field no longer reads every account's password: only the one you pick is read, so a password kept by another build of Search asks for the keychain once, not once per account each time the caret goes in. Thanks [@FabianoC13](https://github.com/FabianoC13) ([#637](https://github.com/driceroland/Search/pull/637))
 
 ### Held back
 
