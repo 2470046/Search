@@ -303,6 +303,10 @@ final class Tab: ObservableObject, Identifiable {
     /// connection, and which passwords a sign-in box is offered, go by this
     /// one, set when the new page has arrived.
     @Published private(set) var committed: URL?
+    /// The view has drawn its first frame; until then the peek shows its
+    /// skeleton (see PeekSkeleton). True from the start on a WebKit that
+    /// doesn't say when.
+    @Published private(set) var painted = false
     var pageAddress: URL? { committed ?? address }
 
     func didCommit() {
@@ -598,6 +602,10 @@ final class Tab: ObservableObject, Identifiable {
     /// For a pin, one every space shows (see Pins.shared). Set when the row
     /// is built; pins.json, not the session, says which pins these are.
     var everywhere = false
+    /// For a pin, the site a link from it was just peeked at, and when: the
+    /// page's own script sending the pin there after all is turned away
+    /// (see Browser.peek).
+    var peeked: (site: String, at: Date)?
     /// For a pin, kept as a row under the squares rather than as a square:
     /// Arc's pinned list, below its favourites. Still a pin in every other
     /// way: put down by ⌘W, the same in every window, never in a group.
@@ -707,7 +715,9 @@ final class Tab: ObservableObject, Identifiable {
             guard let self else { return }
             self.onSearch?(self, text)
         }
+        web.onFirstFrame = { [weak self] in self?.painted = true }
         web.holdForFirstFrame()
+        painted = !web.unpainted
         // Pages follow the appearance of the window they are drawn in, and the
         // window follows Settings › Appearance — so a site that honours
         // prefers-color-scheme goes dark with the frame, and not otherwise.
@@ -1830,6 +1840,8 @@ final class PageView: WKWebView {
     /// Told the moment the page is reached for — a click, a scroll — so the
     /// picture of a tab waking up never stands between you and the page.
     var onTouch: (() -> Void)?
+    /// The page's first frame is on screen (see showFirstFrame).
+    var onFirstFrame: (() -> Void)?
     /// Told when the keys come to this page, however they got here — a
     /// click, or Tab walked past the other page's last field. With two
     /// pages up it makes this one the focused page (Browser.prepare), which
@@ -1935,6 +1947,7 @@ final class PageView: WKWebView {
     func showFirstFrame() {
         guard unpainted else { return }
         unpainted = false
+        onFirstFrame?()
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.12
             animator().alphaValue = 1

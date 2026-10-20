@@ -1643,6 +1643,9 @@ final class Browser: NSObject, ObservableObject {
     var afterSpaceCreated: ((Space) -> Void)?
     /// A link's page, peeked at over this one (see Peek.swift).
     @Published var peekTab: Tab?
+    /// The tab the peek was opened from: a pin wears the peek's icon while
+    /// it is up (see PeekBadge).
+    @Published var peekFrom: UUID?
     /// Which way the last change of space went: 1 to the next, -1 back.
     @Published var spaceStep = 1
 
@@ -2996,7 +2999,10 @@ final class Browser: NSObject, ObservableObject {
         // its place, the page is let go, and you land on whatever you were
         // looking at before. Only Unpin takes it out of the row.
         if tab.pin != nil {
-            tab.rest(at: prefs.pinsGoHome ? tab.home : nil)
+            // Put down is also gone home with Settings › Tabs › Pins stay on
+            // their site, as Arc's pins are: the pin wakes on the page it was
+            // pinned at, not wherever its links had taken it.
+            tab.rest(at: prefs.pinsGoHome || prefs.pinsPeek ? tab.home : nil)
             // Ordinary tabs first. Falling back to the most recent tab of any
             // kind meant closing one pin landed you on another pin, and ⌘W
             // bounced between the two instead of getting you out of them.
@@ -4995,6 +5001,25 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
             DispatchQueue.main.async { [weak self] in self?.peek(url, from: from) }
             return
         }
+        // A plain click in a pin, on a link to another site: a peek too, when
+        // Settings says so (see peeksFromPin). Links into the page's frames
+        // are the page's own business. A link the site sends out by way of
+        // itself, as Google's results go by google.com/goto, is asked about
+        // again at the redirect, still as a click — by then webView.url is
+        // already where it is going, so the page it was on is the one in the
+        // history.
+        if action.navigationType == .linkActivated, action.targetFrame?.isMainFrame == true,
+           action.modifierFlags.intersection([.shift, .command, .option, .control]).isEmpty,
+           let from = tab(for: webView), peeksFromPin(url, in: from, on: webView.backForwardList.currentItem?.url) {
+            decisionHandler(.cancel)
+            DispatchQueue.main.async { [weak self] in self?.peek(url, from: from) }
+            return
+        }
+        if action.navigationType == .other, action.targetFrame?.isMainFrame == true,
+           let from = tab(for: webView), followsPeek(url, in: from) {
+            decisionHandler(.cancel)
+            return
+        }
         if action.navigationType == .linkActivated,
            ["http", "https"].contains(scheme),
            action.modifierFlags.contains(.command) {
@@ -5142,6 +5167,11 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
             }
         }
         let from = opener.id
+        // The link menu's Open Link in New Tab, asked for in the last second.
+        // Read once: reading it takes it.
+        let behind = (webView as? PageView)?.takeBehind() == true
+        let popup = windowFeatures.width != nil || windowFeatures.height != nil
+            || windowFeatures.toolbarsVisibility?.boolValue == false
         // WebKit's copy of the opener's configuration still holds the
         // opener's user content controller — its scripts and its message
         // handlers. Shared, the new tab claimed the opener's handlers as its
@@ -5152,15 +5182,30 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         // The opener's copy is what its view was made with, maybe before
         // Settings › Videos wait for a click last moved.
         configuration.mediaTypesRequiringUserActionForPlayback = Web.playback
+        // A new window a pin's page asked for on a click — a target="_blank"
+        // link, or window.open from the click, as Gmail's links and many
+        // sites' do, often by way of a redirect on their own site — opens in
+        // the peek rather than the row (see peekWindow). Only on a click:
+        // a window the page opens by itself, even from a site allowed
+        // pop-ups, takes the tab path as before. A window sized by the page,
+        // "Sign in with…", is left alone, as is a modified click, and so is
+        // anything that isn't a web page (about:blank, data:, blob:).
+        if clicked, !behind, !popup, prefs.pinsPeek, peekTab == nil, opener.pin != nil,
+           [.linkActivated, .other].contains(action.navigationType),
+           action.modifierFlags.intersection([.shift, .command, .option, .control]).isEmpty,
+           let url = action.request.url, Browser.peekable(url) {
+            let page = peekWindow(configuration, from: opener, going: url)
+            opener.popupGesture.opened(page.id)
+            return page.web
+        }
         let tab = Tab(shy: opener.shy, configuration: configuration)
-        tab.popup = windowFeatures.width != nil || windowFeatures.height != nil
-            || windowFeatures.toolbarsVisibility?.boolValue == false
+        tab.popup = popup
         tab.opener = from
         if clicked { opener.popupGesture.opened(tab.id) }
         // The link menu's Open Link in New Tab: behind this tab, where a
         // ⌘-click's goes (see open(_:foreground:)).
         prepare(tab)
-        if (webView as? PageView)?.takeBehind() == true, let source = self.tab(for: webView) {
+        if behind, let source = self.tab(for: webView) {
             if prefs.usesTabGroups, !tab.shy, !tab.bench { tab.groupID = source.groupID }
             tabs.insert(tab, at: placeForNew())
         } else {

@@ -332,6 +332,12 @@ final class Preferences: ObservableObject {
     @Published var peeksLinks: Bool {
         didSet { store.set(peeksLinks, forKey: "links.peek") }
     }
+    /// Pins as in Arc: a link from a pinned tab to another site opens in a
+    /// peek, so the pin stays on its page (see Peek.swift), and ⌘W takes it
+    /// back to the page it was pinned at. Off unless asked for.
+    @Published var pinsPeek: Bool {
+        didSet { store.set(pinsPeek, forKey: "pins.peek") }
+    }
     /// A link from another app opens in a small window of its own (see
     /// Little.swift). Off unless asked for.
     @Published var littleLinks: Bool {
@@ -605,6 +611,7 @@ final class Preferences: ObservableObject {
         installsUpdates = store.object(forKey: Updater.installKey) as? Bool ?? true
         peeksLinks = store.object(forKey: "links.peek") as? Bool ?? true
         peekClick = store.string(forKey: "links.peekClick").flatMap(PeekClick.init(rawValue:)) ?? .shift
+        pinsPeek = store.bool(forKey: "pins.peek")
         littleLinks = store.bool(forKey: "links.little")
         bookmarksBar = store.bool(forKey: "bookmarks.bar")
         alwaysShowsDownloads = store.bool(forKey: "downloads.button")

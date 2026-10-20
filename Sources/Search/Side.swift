@@ -658,6 +658,14 @@ private struct PinSquare: View {
                     .allowsHitTesting(false)
             }
         }
+        .overlay(alignment: .topTrailing) {
+            // The peek opened from it, while it is up.
+            if browser.peekFrom == tab.id, let page = browser.peekTab {
+                PeekBadge(page: page, size: scale * 16 / 34)
+                    .offset(x: scale * 4 / 34, y: -scale * 4 / 34)
+            }
+        }
+        .animation(Motion.quick, value: browser.peekFrom)
         .contentShape(RoundedRectangle(cornerRadius: scale * 9 / 34, style: .continuous))
         .modifier(TabPress(enabled: browser.editingPin != tab.id, active: live, selected: $selectedOnPress) {
             browser.clearTabSelection()
@@ -703,6 +711,9 @@ private struct SideRow: View {
     /// The speaker, which can be pressed, and so steps in beside the cross
     /// under the pointer rather than hiding beneath it as the ring does.
     private var speaker: Bool { !tab.loading && (tab.noisy || tab.muted) }
+    /// A pinned row with a peek opened from it: the peek's icon at its end,
+    /// as on a square's corner.
+    private var peeking: Bool { !editing && tab.pin != nil && browser.peekFrom == tab.id && browser.peekTab != nil }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -743,7 +754,7 @@ private struct SideRow: View {
                 Spacer(minLength: 0)
             }
             .padding(.leading, 10)
-            .padding(.trailing, status ? 0 : 10)
+            .padding(.trailing, status || peeking ? 0 : 10)
             .frame(height: prefs.sideRow)
             .contentShape(Rectangle())
             .modifier(TabPress(enabled: interactive && !editing, active: live, selected: $selectedOnPress) {
@@ -751,6 +762,12 @@ private struct SideRow: View {
                 browser.select(tab)
             })
 
+            if peeking, let page = browser.peekTab {
+                // Under the pointer the cross takes its place, unless the
+                // ring or the speaker already holds the end of the row.
+                PeekBadge(page: page, size: 16)
+                    .opacity(hovering && !status ? 0 : 1)
+            }
             if status {
                 ZStack {
                     if tab.loading {
@@ -766,7 +783,7 @@ private struct SideRow: View {
                 .padding(.trailing, hovering && speaker ? 23 : 0)
             }
         }
-        .padding(.trailing, status ? 7 : 0)
+        .padding(.trailing, status || peeking ? 7 : 0)
         .frame(height: prefs.sideRow)
         .frame(maxWidth: .infinity, alignment: .leading)
         // The title keeps its length under the pointer and fades out
@@ -810,6 +827,7 @@ private struct SideRow: View {
         .animation(Motion.quick, value: tab.loading)
         .animation(Motion.quick, value: speaker)
         .animation(Motion.quick, value: tab.blockedPopups.isEmpty)
+        .animation(Motion.quick, value: peeking)
         .background { ground.animation(Motion.quick, value: live) }
         .overlay {
             if browser.selectedTabIDs.contains(tab.id) {
