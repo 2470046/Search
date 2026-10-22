@@ -53,6 +53,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Fixed
 
+- Stylus's popup and style manager open instead of staying blank. Stylus has the extension's own worker make its first data, as Chrome lets a worker do for an extension's pages; WebKit's worker never sees those requests, so a page that asks this way now gets its data by message instead. Its worker also no longer reports an error on install.
 - A page on this Mac opens the files it links to in other folders, as in Safari and Chrome. WebKit lets a file page read only its own folder and dropped the click on a link out of it, so an .html report linking to `../other/page.html` stayed where it was and only the address pasted into a window opened it. The opened page reads its own folder, as one typed in does, and no more. A website's link to a file on this Mac stays refused, as in every browser.
 - Settings › Videos wait for a click is followed by tabs already open from their next page or reload, and by a link opened from one of them. Before, a tab open when the switch moved, and any link opened from it, kept the old answer until it slept or Search restarted, so with the switch off again its videos still waited for a click
 - A video file opened as a page plays, as in Safari, instead of ending on "The page didn't load". A download site's link to an .mp4 opened the video in a new tab, and the error page covered it while it loaded. A file the site sends as a download still downloads, and a video that can't be reached still says so
