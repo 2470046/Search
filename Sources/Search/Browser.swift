@@ -3027,6 +3027,7 @@ final class Browser: NSObject, ObservableObject {
         // Coming back to the tab whose video is out brings it home first, so
         // it is never lifted and landed in the same breath.
         if floating == tab.id { land() }
+        if pictured == tab.id { unpicture() }
         if floatPrevious { leaving() }
         activeID = tab.id
         tab.touch()
@@ -4387,7 +4388,7 @@ final class Browser: NSObject, ObservableObject {
 
     func appLeft() {
         guard prefs.floatsAway, Browsers.front == nil || Browsers.front === self else { return }
-        liftedAway = !floater.showing
+        liftedAway = !floater.showing && pictured == nil
         lift(active, quietly: true, otherwise: otherPane)
     }
 
@@ -4395,6 +4396,7 @@ final class Browser: NSObject, ObservableObject {
     func appBack() {
         defer { liftedAway = false }
         if liftedAway, let id = floating, id == activeID { land() }
+        if liftedAway, let id = pictured, id == activeID { unpicture() }
     }
 
     /// ⌘⇧P, for lifting one out by hand.
@@ -4403,7 +4405,49 @@ final class Browser: NSObject, ObservableObject {
             land()
             return
         }
+        if prefs.floatStyle == .system {
+            picture(active, quietly: false, toggle: true, otherwise: otherPane)
+            return
+        }
         lift(active, quietly: false, otherwise: otherPane)
+    }
+
+    /// The tab whose video Search last sent to macOS's picture in picture
+    /// (Settings › General › The floating video), to bring back when you
+    /// return to it, as Search's own window lands.
+    private(set) var pictured: Tab.ID?
+
+    /// The video playing in `tab` into picture in picture (NativePiP).
+    /// `toggle`: ⇧⌘P, which also brings one back.
+    private func picture(_ tab: Tab?, quietly: Bool, toggle: Bool = false, otherwise: Tab? = nil) {
+        guard let tab, !tab.isBlank, !tab.asleep, tab.web.fullscreenState == .notInFullscreen else {
+            if let otherwise { picture(otherwise, quietly: quietly, toggle: toggle) }
+            return
+        }
+        if quietly, !Players.knows(tab.address) || tab.pageAddress?.host().map(Grounded.holds) == true {
+            if let otherwise { picture(otherwise, quietly: quietly, toggle: toggle) }
+            return
+        }
+        tab.web.evaluateInSearch(NativePiP.script(toggle: toggle)) { [weak self, weak tab] answer in
+            MainActor.assumeIsolated {
+                guard let self, let tab else { return }
+                switch answer as? String {
+                case "in": self.pictured = tab.id
+                case "out": if self.pictured == tab.id { self.pictured = nil }
+                case "refused": if !quietly { self.announce("This page keeps its video to itself") }
+                default:
+                    if let otherwise { return self.picture(otherwise, quietly: quietly, toggle: toggle) }
+                    if !quietly { self.announce("Nothing is playing here") }
+                }
+            }
+        }
+    }
+
+    /// Back into its tab, from macOS's picture in picture.
+    func unpicture() {
+        guard let id = pictured else { return }
+        pictured = nil
+        tabs.first { $0.id == id }?.web.evaluateInSearch(NativePiP.off)
     }
 
     /// Everything but the video goes out of the way, and the page it lives in
@@ -4411,6 +4455,7 @@ final class Browser: NSObject, ObservableObject {
     /// `otherwise`: the other page of a pair, tried when this one has
     /// nothing playing.
     private func lift(_ tab: Tab?, quietly: Bool, otherwise: Tab? = nil) {
+        if prefs.floatStyle == .system { return picture(tab, quietly: quietly, otherwise: otherwise) }
         // A tab just put down with ⌘W has no page to lift a video out of, and
         // asking it would only build an empty view to ask.
         guard let tab, !tab.isBlank, !tab.asleep, !floater.showing else {

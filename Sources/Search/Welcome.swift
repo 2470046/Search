@@ -202,6 +202,7 @@ struct WelcomePanel: View {
                 Key("⌘L", "Suggestions from your search engine as you type — off until you turn them on in Settings › General.")
                 Key("⌘", "Held, it can show each tab's number for ⌘1–9. Settings › Tabs.")
                 Key("⌘1", "Pressed again on its pin, back to where you were. Settings › Tabs.")
+                Key("⇧⌘P", "Float a video in Search's window, or in macOS's picture in picture. Settings › General.")
                 Key("⌘Q", "Search can ask before it quits. Settings › General.")
                 if AI.shipped {
                     Key("⌘,", "AI summaries and questions about a page — off until you turn it on in Settings › AI.")

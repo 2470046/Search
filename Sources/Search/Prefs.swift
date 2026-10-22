@@ -409,6 +409,14 @@ final class Preferences: ObservableObject {
     @Published var floatsOnLeave: Bool {
         didSet { store.set(floatsOnLeave, forKey: "float.leave") }
     }
+    /// Which window a floating video goes into: Search's own, as it always
+    /// was, or macOS's picture in picture (see NativePiP.swift).
+    @Published var floatStyle: FloatStyle {
+        didSet {
+            store.set(floatStyle.rawValue, forKey: "float.style")
+            NativePiP.allowEverywhere()
+        }
+    }
     /// A newer build is fetched, checked and put in place on its own, as it
     /// always was. Off, Search still looks every hour and says so, and waits
     /// for Install in Settings (see Updater.installsOnItsOwn).
@@ -631,6 +639,7 @@ final class Preferences: ObservableObject {
         Float.flicks = flicks
         floatsAway = store.bool(forKey: "float.away")
         floatsOnLeave = store.object(forKey: "float.leave") as? Bool ?? true
+        floatStyle = store.string(forKey: "float.style").flatMap(FloatStyle.init(rawValue:)) ?? .search
         waitsForPlay = store.bool(forKey: Preferences.waitsKey)
         installsUpdates = store.object(forKey: Updater.installKey) as? Bool ?? true
         peeksLinks = store.object(forKey: "links.peek") as? Bool ?? true

@@ -348,6 +348,10 @@ struct SettingsPanel: View {
                 Switch(on: $prefs.holdsHistory)
             }
             Rule()
+            Line("The floating video", "Search's own window floats a video without a click and keeps its page alive in it. Picture in picture is macOS's, the one Safari uses, with the system's controls") {
+                Segmented(options: FloatStyle.allCases.map { ($0, $0.title) }, selection: $prefs.floatStyle)
+            }
+            Rule()
             Line("Flick the floating video to a corner", "Two fingers on it send it to the corner or edge they point at, instead of pushing it along; a strong swipe at the side of the screen it is against tucks it in there, a sliver left to bring it back by. Dragging still puts it anywhere") {
                 Switch(on: $prefs.floatFlicks)
             }
