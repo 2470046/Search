@@ -1269,6 +1269,10 @@ struct TabMenu: View {
             browser.copyCleanLink()
         }
         .disabled(tab.isBlank)
+        if browser.prefs.sitesInPanel {
+            Button("Open in Side Panel") { browser.openInSidePanel(tab) }
+                .disabled(tab.isBlank || tab.shy)
+        }
         Button(tab.muted ? "Unmute Tab" : "Mute Tab") { tab.toggleMute() }
         // Its page let go of now, as it would be after half an hour unseen:
         // the row keeps its title and picture, and it loads again when gone

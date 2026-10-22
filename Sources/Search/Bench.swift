@@ -2959,6 +2959,9 @@ final class Bench {
             var content: [String: Any] = ["kind": "none"]
             switch browser.sidePanel {
             case .page(let id, let url, let tab): content = ["kind": "page", "extension": id, "url": url.absoluteString, "tab": tab.map { $0.uuidString } ?? ""]
+            case .site(let url, let space): content = ["kind": "site", "url": url.absoluteString, "space": space.uuidString,
+                                                       "store": web.map { $0.configuration.websiteDataStore.isPersistent } ?? false,
+                                                       "sameStore": web.map { $0.configuration.websiteDataStore === Spaces.store(for: browser.spaceID) } ?? false]
             case nil: break
             }
             // Where the panel's page and every page sit in the window, from
@@ -2999,6 +3002,20 @@ final class Bench {
                 guard Store.testing else { answer(["error": "sidepanel close only works on a --test run"]); return }
                 browser.closeSidePanel()
                 answer(["shown": browser.sidePanelShown])
+            case "site":
+                // A website into the panel, as View › Side Panel puts one
+                // there (or the tab's menu, with "tab"). Test runs only.
+                guard Store.testing else { answer(["error": "sidepanel site only works on a --test run"]); return }
+                if let id = request["tab"] as? String, let tab = browser.tabs.first(where: { $0.id.uuidString.lowercased().hasPrefix(id.lowercased()) }) {
+                    browser.openInSidePanel(tab)
+                } else if let url = (request["url"] as? String).flatMap(URL.init(string:)) {
+                    browser.showSiteInPanel(url)
+                }
+                answer(["shown": browser.sidePanelShown])
+            case "totab":
+                guard Store.testing else { answer(["error": "sidepanel totab only works on a --test run"]); return }
+                browser.sitePanelToTab()
+                answer(["shown": browser.sidePanelShown, "tabs": browser.tabs.count])
             default:
                 answer(state)
             }

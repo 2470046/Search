@@ -409,6 +409,20 @@ final class Preferences: ObservableObject {
     @Published var floatsOnLeave: Bool {
         didSet { store.set(floatsOnLeave, forKey: "float.leave") }
     }
+    /// Websites in the side panel (SidePanel.swift). Off unless asked for:
+    /// without it, only an extension's panel goes there.
+    @Published var sitesInPanel: Bool {
+        didSet {
+            store.set(sitesInPanel, forKey: "panel.sites")
+            if !sitesInPanel {
+                for browser in Browsers.all { if case .site = browser.sidePanel { browser.closeSidePanel() } }
+            }
+        }
+    }
+    /// The website last put in the side panel, for View › Side Panel.
+    @Published var panelSite: String {
+        didSet { store.set(panelSite, forKey: "panel.site") }
+    }
     /// Which window a floating video goes into: Search's own, as it always
     /// was, or macOS's picture in picture (see NativePiP.swift).
     @Published var floatStyle: FloatStyle {
@@ -639,6 +653,8 @@ final class Preferences: ObservableObject {
         Float.flicks = flicks
         floatsAway = store.bool(forKey: "float.away")
         floatsOnLeave = store.object(forKey: "float.leave") as? Bool ?? true
+        sitesInPanel = store.bool(forKey: "panel.sites")
+        panelSite = store.string(forKey: "panel.site") ?? ""
         floatStyle = store.string(forKey: "float.style").flatMap(FloatStyle.init(rawValue:)) ?? .search
         waitsForPlay = store.bool(forKey: Preferences.waitsKey)
         installsUpdates = store.object(forKey: Updater.installKey) as? Bool ?? true

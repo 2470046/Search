@@ -138,6 +138,21 @@ struct SearchApp: App {
                     .shortcut("view.reader")
                 Button("Float Video") { browser.toggleFloat() }
                     .shortcut("view.float")
+                // Websites in the side panel, only once they are on
+                // (Settings › General).
+                if browser.prefs.sitesInPanel {
+                    Menu("Side Panel") {
+                        Button(browser.sidePanelShown ? "Close Side Panel" : "Show Side Panel") { browser.toggleSitePanel() }
+                            .shortcut("view.sitePanel")
+                        Divider()
+                        ForEach(PanelSites.offered, id: \.name) { site in
+                            Button(site.name) { browser.showSiteInPanel(site.url) }
+                        }
+                        Divider()
+                        Button("This Page") { if let tab = browser.active { browser.openInSidePanel(tab) } }
+                            .disabled((browser.active?.isBlank ?? true) || (browser.active?.shy ?? true))
+                    }
+                }
                 // Dark pages, only once they are on (Settings › Appearance).
                 if browser.prefs.darkensPages {
                     Divider()

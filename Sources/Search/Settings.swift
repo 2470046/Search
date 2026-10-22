@@ -292,6 +292,10 @@ struct SettingsPanel: View {
                 .padding(.bottom, 6)
             }
             Rule()
+            Line("Websites in the side panel", "Keep a site such as Claude or ChatGPT beside the page: View › Side Panel, or right-click a tab › Open in Side Panel. Signed in as the space's tabs are") {
+                Switch(on: $prefs.sitesInPanel)
+            }
+            Rule()
             Line("Confirm before quitting", "Ask before ⌘Q or Quit Search closes the browser") {
                 Switch(on: $prefs.confirmsQuit)
             }

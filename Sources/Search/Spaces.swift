@@ -236,6 +236,7 @@ extension Browser {
         parked[spaceID] = Parked(tabs: tabs, active: activeID, splits: splits, groups: tabGroups)
 
         spaceID = id
+        sitePanelFollowsSpace()
         // A space kept in memory has its groups with it; one that isn't is
         // read whole just below (restoreSession), groups included.
         tabGroups = parked[id]?.groups ?? []

@@ -203,6 +203,7 @@ struct WelcomePanel: View {
                 Key("⌘", "Held, it can show each tab's number for ⌘1–9. Settings › Tabs.")
                 Key("⌘1", "Pressed again on its pin, back to where you were. Settings › Tabs.")
                 Key("⇧⌘P", "Float a video in Search's window, or in macOS's picture in picture. Settings › General.")
+                Key("⌘,", "Claude or ChatGPT in a side panel beside the page — turn on Websites in the side panel in Settings › General.")
                 Key("⌘Q", "Search can ask before it quits. Settings › General.")
                 if AI.shipped {
                     Key("⌘,", "AI summaries and questions about a page — off until you turn it on in Settings › AI.")
