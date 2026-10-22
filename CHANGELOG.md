@@ -22,6 +22,10 @@ in [ROADMAP.md](ROADMAP.md).
 - Settings › General › Confirm before quitting asks before ⌘Q or Quit Search closes the browser. Cancel keeps the windows and tabs open. Off unless turned on. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#659](https://github.com/driceroland/Search/pull/659))
 - Pins and tabs dragged across, as in Arc: a tab carried onto the pins becomes one where you let it go, the squares making room for it on the way, and a pin carried down among the tabs becomes a tab there, a line opening where it will land. Either keeps its page as it is, with nothing loaded again. With pinned rows on, a tab can be let go among them, and a square or a row taken to the other kind. A pin let go over a group's name goes into the group. With no pins yet, carry a tab up beside the window's buttons to make the first. A pair in Split View isn't pinned by a drag (Pin Tab still pins the half you ask for). A pin dropped in makes a pin of this space, after the ones every space shows; one of those dragged out leaves every space, as Unpin does
 
+### Changed
+
+- With the tabs in the sidebar, back, forward and reload sit a little further from the window's red, yellow and green buttons, as a toolbar's first button does in Safari; a narrow column keeps them where they were
+
 ### Fixed
 
 - Dragging a tab or a pin in the column moves it under the hand again. In 1.0.6, since a tab opens as the button goes down ([#625](https://github.com/driceroland/Search/pull/625)), it only jumped into place on letting go, and a pin held still a moment before letting go wasn't moved at all
