@@ -698,6 +698,13 @@ final class Browser: NSObject, ObservableObject {
         let clear: Bool
         /// Hung from a first step's name box: a pick puts in the name alone.
         var nameOnly = false
+        /// Accounts from the Mac's Passwords app (ApplePasswords.swift),
+        /// names only, and the page host they were asked for. Set when the
+        /// helper answers, after the list is up.
+        var apple: [AppleLogin] = []
+        var appleHost: String?
+        /// Apple Passwords is on but not paired: a row to connect.
+        var appleConnect = false
         /// When it came up. A page can put the caret in a sign-in box
         /// itself, an invisible one under the pointer included: a click that
         /// was already on its way is not a choice, so the list takes none for
@@ -718,6 +725,9 @@ final class Browser: NSObject, ObservableObject {
     /// The sign-in box the caret is in, for a list that changes while it is
     /// there: the page's passkeys arrive when they arrive.
     private var field: (tab: Tab.ID, spot: CGRect, passwords: Bool, name: Bool)?
+    /// Counts the boxes Apple Passwords was asked about: an answer for a box
+    /// the caret has left since is dropped.
+    private var appleAsk = 0
 
     func keepOffer() {
         guard let offer = offering else { return }
@@ -748,7 +758,7 @@ final class Browser: NSObject, ObservableObject {
     /// does it, and what a person expects.
     private func hang(from tab: Tab, _ spot: CGRect?, passwords: Bool, name: Bool = false) {
         guard let spot else {
-            if field?.tab == tab.id { field = nil }
+            if field?.tab == tab.id { field = nil; appleAsk += 1 }
             if looked?.tab == tab.id { looked = nil }
             if pickedInto == tab.id { pickedInto = nil }
             guard suggesting?.tab == tab.id else { return }
@@ -796,16 +806,111 @@ final class Browser: NSObject, ObservableObject {
         }
         let known = Array(kept.prefix(5))
         let passkeys = Passkeys.shared.offered(in: tab.built)
-        guard !known.isEmpty || !passkeys.isEmpty else {
+        // The Mac's Passwords app, when turned on: an https page of an
+        // ordinary tab only, asked about by its own host. Paired, its names
+        // join the list when the helper answers; not yet, a row offers to
+        // connect.
+        let appleHost = prefs.applePasswords && prefs.fillsPasswords && passwords
+            ? ApplePasswords.offers(on: tab.pageAddress, privateTab: tab.shy) : nil
+        let apple = ApplePasswords.shared
+        let connect = appleHost != nil && apple.state == .idle
+        appleAsk += 1
+        // Asked only for the tab in front of you, in the window you are in.
+        if let appleHost, apple.state == .paired, tab.built?.window?.isKeyWindow == true {
+            lookUpApple(appleHost, in: tab, host: host, name: name)
+        }
+        guard !known.isEmpty || !passkeys.isEmpty || connect else {
             suggesting = nil
             return
         }
         // What is under the pointer changed: the half second starts again.
-        if let up = suggesting, up.tab == tab.id, up.logins == known, up.passkeys == passkeys, up.nameOnly == name {
+        if let up = suggesting, up.tab == tab.id, up.logins == known, up.passkeys == passkeys, up.nameOnly == name,
+           up.appleConnect == connect, up.apple.isEmpty {
             suggesting?.spot = spot
             return
         }
-        suggesting = Suggesting(tab: tab.id, spot: spot, logins: known, passkeys: passkeys, host: host, clear: inTheClear, nameOnly: name)
+        suggesting = Suggesting(tab: tab.id, spot: spot, logins: known, passkeys: passkeys, host: host, clear: inTheClear,
+                                nameOnly: name, appleHost: appleHost, appleConnect: connect)
+    }
+
+    /// Asks Apple's helper for the names it keeps for the page, and adds
+    /// them under the box if the caret is still in it, on the same page.
+    private func lookUpApple(_ appleHost: String, in tab: Tab, host: String, name: Bool) {
+        let ask = appleAsk
+        Task { [weak self] in
+            let found = await ApplePasswords.shared.logins(for: appleHost, tab: tab.id)
+            guard let self, ask == appleAsk, let field, field.tab == tab.id, tab.id == activeID,
+                  ApplePasswords.offers(on: tab.pageAddress, privateTab: tab.shy) == appleHost
+            else { return }
+            let mine = suggesting?.tab == tab.id ? suggesting?.logins ?? [] : []
+            let apple = Array(found
+                .filter { ApplePasswords.belongs($0.sites, to: appleHost) }
+                .filter { theirs in !mine.contains { $0.user.caseInsensitiveCompare(theirs.user) == .orderedSame } }
+                .prefix(5))
+            guard !apple.isEmpty else { return }
+            if var up = suggesting, up.tab == tab.id {
+                up.apple = apple
+                up.appleHost = appleHost
+                up.appleConnect = false
+                // New rows under the pointer: the half second starts again.
+                up.shown = Date()
+                suggesting = up
+            } else {
+                suggesting = Suggesting(tab: tab.id, spot: field.spot, logins: [], host: host, clear: false,
+                                        nameOnly: name, apple: apple, appleHost: appleHost)
+            }
+        }
+    }
+
+    /// One of the Passwords app's accounts, picked by name. Its password is
+    /// asked for now (macOS may want Touch ID), put into the page if it is
+    /// still the page it was asked for, and not kept.
+    func choose(_ apple: AppleLogin) {
+        lowering?.cancel()
+        guard let list = suggesting, let tab = tabs.first(where: { $0.id == list.tab }), let appleHost = list.appleHost else { return }
+        guard Date().timeIntervalSince(list.shown) > 0.5 else { return }
+        suggesting = nil
+        guard ApplePasswords.offers(on: tab.pageAddress, privateTab: tab.shy) == appleHost,
+              ApplePasswords.belongs(apple.sites, to: appleHost)
+        else { return }
+        pickedInto = tab.id
+        if list.nameOnly {
+            tab.fillName(apple.user) { [weak self] worked in
+                if !worked { self?.announce("Couldn't find the sign-in fields anymore") }
+            }
+            return
+        }
+        Task { [weak self] in
+            let found = await ApplePasswords.shared.password(for: apple.user, host: appleHost, tab: tab.id)
+            guard let self else { return }
+            guard let found else {
+                announce("Apple Passwords didn't hand that password over")
+                return
+            }
+            // Touch ID can take a while: the page must still be the one
+            // asked for, in front, and the account still this site's.
+            guard tabs.contains(where: { $0 === tab }), tab.id == activeID,
+                  ApplePasswords.offers(on: tab.pageAddress, privateTab: tab.shy) == appleHost,
+                  ApplePasswords.belongs(found.sites, to: appleHost)
+            else { return }
+            tab.appleFill = AppleFill(host: appleHost, user: apple.user, password: found.password)
+            tab.fill(user: apple.user, password: found.password) { [weak self] worked in
+                if !worked { self?.announce("Couldn't find the sign-in fields anymore") }
+            }
+        }
+    }
+
+    /// The row that connects Apple Passwords: Settings › Passwords, where the
+    /// code goes, and the pairing started.
+    func connectApplePasswords() {
+        lowering?.cancel()
+        // The same half second as any row: a click already on its way when
+        // a page put the caret in a box isn't a choice.
+        guard let list = suggesting, Date().timeIntervalSince(list.shown) > 0.5 else { return }
+        suggesting = nil
+        settingsPage = .passwords
+        tuning = true
+        Task { await ApplePasswords.shared.connect() }
     }
 
     /// One of the accounts in the list, picked by name.
@@ -4789,6 +4894,8 @@ final class Browser: NSObject, ObservableObject {
             // A password manager extension that asked Chrome's way to do the
             // saving itself.
             if #available(macOS 15.4, *), Extensions.shared.passwordSavingTakenBy != nil { return }
+            // Just filled from the Passwords app: it is kept there already.
+            if tab.appleFill?.matches(host: host, user: user, password: password) == true { return }
             let known = Vault.kept(for: host)
             // Nothing to ask about one that is already known. Only that
             // account's secret is read, not every one kept for the site.
