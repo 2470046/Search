@@ -104,6 +104,7 @@ in [ROADMAP.md](ROADMAP.md).
 - Password suggestions stay out of search and issue-title fields, including GitHub's search box, while two-step sign-ins still offer saved accounts. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#631](https://github.com/driceroland/Search/issues/631), [#647](https://github.com/driceroland/Search/pull/647))
 - Signing in with a security key no longer crashes when the key returns no user handle, as reported with Okta. The site receives a null user handle, as WebAuthn allows. Thanks [@BryanZaneee](https://github.com/BryanZaneee) ([#548](https://github.com/driceroland/Search/issues/548), [#646](https://github.com/driceroland/Search/pull/646))
 - A username in Settings › Passwords can be selected and copied, as the password beside it already could. It was the one half of a sign-in the list would not give you back. Thanks [@Chahine-tech](https://github.com/Chahine-tech), and [@BeNDYGo](https://github.com/BeNDYGo) for asking ([#634](https://github.com/driceroland/Search/issues/634), [#652](https://github.com/driceroland/Search/pull/652))
+- Closing a call tab, or putting down a pinned tab, stops its camera and microphone even while the page is still held in memory, so the camera's light goes off with the tab. Calls in other tabs keep going. Thanks [@BryanZaneee](https://github.com/BryanZaneee), and [@dalxds](https://github.com/dalxds) for reporting ([#655](https://github.com/driceroland/Search/issues/655), [#657](https://github.com/driceroland/Search/pull/657))
 
 ### Held back
 
