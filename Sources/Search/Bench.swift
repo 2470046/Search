@@ -2916,6 +2916,13 @@ final class Bench {
                 browser.bringingIn = ["off", "false", "0", "no"].contains(text) ? nil
                     : ["on", "true", "1", "yes", "extensions"].contains(text) ? "" : text
             }
+            // Search's own pages (InternalPages.swift): one shown by its
+            // address as a link would open it, one reached from the page in
+            // front as its own buttons do, and an address typed on the tab
+            // in front.
+            if let text = request["show"] as? String, let url = URL(string: text) { _ = browser.open(url, foreground: true) }
+            if let text = request["lead"] as? String, let kind = InternalPage.Kind(rawValue: text) { browser.lead(to: InternalPage(kind)) }
+            if let text = request["go"] as? String, let url = URL(string: text) { browser.active?.go(to: url) }
             if let on = request["hidden"] as? Bool { browser.reviewing = on }
             if let look = (request["look"] as? String).flatMap(Look.init) { browser.prefs.look = look }
             if let side = request["side"] as? String {
@@ -3444,6 +3451,11 @@ final class Bench {
                     "title": tab.title,
                     "url": tab.address?.absoluteString ?? "",
                     "blank": tab.isBlank,
+                    // One of Search's own pages (InternalPages.swift), by its address.
+                    "internal": tab.page?.url.absoluteString ?? "",
+                    "canBack": tab.canGoBack,
+                    "canForward": tab.canGoForward,
+                    "built": tab.built != nil,
                     "shy": tab.shy,
                     "bench": tab.bench,
                     "asleep": tab.asleep,
@@ -3652,6 +3664,7 @@ final class Bench {
             "id": Bench.short(tab),
             "url": tab.address?.absoluteString ?? "",
             "page": tab.pageAddress?.absoluteString ?? "",
+            "internal": tab.page?.url.absoluteString ?? "",
             "title": tab.title,
             "name": tab.name ?? "",
             // The group it is in, by name, whether or not groups are on.

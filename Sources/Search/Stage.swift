@@ -16,6 +16,9 @@ struct Page: View {
     var holdsPage = true
     /// The page's corners, as a card on the window's frame (see CardEdge).
     var corner: CGFloat = 0
+    /// The window, for a tab showing one of Search's own pages, which are
+    /// drawn here in the web page's place (see InternalPages.swift).
+    var browser: Browser?
 
     var body: some View {
         ZStack {
@@ -27,7 +30,11 @@ struct Page: View {
             // the stage was never told to take it back when it landed, and
             // the tab stayed empty. Nothing, then the page, is a change.
             if holdsPage {
-                WebStage(page: tab.isBlank || tab.asleep || tab.floating ? nil : tab.web, corner: corner)
+                WebStage(page: !tab.isWeb || tab.asleep || tab.floating ? nil : tab.web, corner: corner)
+            }
+
+            if let page = tab.page, let browser {
+                InternalPageView(browser: browser, tab: tab, page: page, corner: corner)
             }
 
             if let cover = tab.cover {
@@ -67,6 +74,7 @@ struct Page: View {
 
             Swiping(pull: tab.pull)
         }
+        .animation(Motion.quick, value: tab.page?.kind)
         .animation(Motion.quick, value: tab.failure)
         .animation(Motion.quick, value: tab.floating)
         .animation(.easeOut(duration: 0.2), value: tab.cover == nil)

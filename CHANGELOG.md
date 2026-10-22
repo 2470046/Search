@@ -26,6 +26,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Changed
 
+- Settings, History, Downloads, Bookmarks, Passwords, Bring Things Over and What's New open as pages in a tab of their own, as in Chrome, instead of a card over the page. ⌘, ⌘Y ⇧⌘J and the menus bring the open one forward rather than opening a second; an empty tab in front becomes the page. Each has its own address (search://settings, search://history…), goes with ⌃Tab, sits beside a page in Split View, closes with ⌘W and comes back after a relaunch. Back and Forward go between them, and from a page you opened out of History or Bookmarks back to the list. From a private tab they open beside it, as ordinary tabs
 - With the tabs in the sidebar, back, forward and reload sit a little further from the window's red, yellow and green buttons, as a toolbar's first button does in Safari; a narrow column keeps them where they were
 
 ### Fixed
