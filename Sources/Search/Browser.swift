@@ -3796,10 +3796,24 @@ final class Browser: NSObject, ObservableObject {
     }
 
     /// ⌘1–8: a tab or folded group in that place, without unfolding it.
+    /// With Settings › Tabs › A pin's number again goes back, the number of
+    /// the pin you're on takes you back to the tab you were on before it.
     func select(index: Int) {
         let targets = tabShortcutTargets
         guard targets.indices.contains(index) else { return }
-        select(entry(targets[index].tab), unfoldGroup: false)
+        let tab = entry(targets[index].tab)
+        if prefs.pinNumberGoesBack, tab.pin != nil, activeID == tab.id, let back = tabBefore(tab) {
+            select(back)
+            return
+        }
+        select(tab, unfoldGroup: false)
+    }
+
+    /// The tab last left that is still in the row, other than `tab`.
+    func tabBefore(_ tab: Tab) -> Tab? {
+        let row = tabs.filter(standsInRow)
+        guard let id = tabSwitcher.lastLeft(among: Set(row.map(\.id)), other: tab.id) else { return nil }
+        return row.first { $0.id == id }
     }
 
     /// ⌃Tab: the space's tabs, the most recently used first, and the small

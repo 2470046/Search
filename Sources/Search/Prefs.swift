@@ -440,6 +440,11 @@ final class Preferences: ObservableObject {
     @Published var pinsGoHome: Bool {
         didSet { store.set(pinsGoHome, forKey: "pins.home") }
     }
+    /// A pin's ⌘ number pressed again, on that pin, goes back to the tab
+    /// you were on before it. Off unless asked for.
+    @Published var pinNumberGoesBack: Bool {
+        didSet { store.set(pinNumberGoesBack, forKey: "pins.numberBack") }
+    }
     /// Whether the pinned rows are drawn as rows: asked for, and with the
     /// tabs down the side. Across the top every pin is a square.
     var showsPinRows: Bool { listsPins && sidebar }
@@ -607,6 +612,7 @@ final class Preferences: ObservableObject {
         usesTabGroups = store.bool(forKey: "tabs.groups")
         listsPins = store.bool(forKey: "pins.list")
         pinsGoHome = store.bool(forKey: "pins.home")
+        pinNumberGoesBack = store.bool(forKey: "pins.numberBack")
         sharesPins = store.bool(forKey: "pins.shared")
         splitView = store.bool(forKey: "splitView")
         switcherKeys = store.bool(forKey: "switcher.keys")
