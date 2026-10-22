@@ -2947,6 +2947,7 @@ final class Bench {
             if let on = request["sharedpins"] as? Bool { browser.prefs.sharesPins = on }
             if let on = request["hides"] as? Bool { browser.prefs.sideHides = on }
             if let on = request["cards"] as? Bool { browser.prefs.cards = on }
+            if let on = request["address"] as? Bool { browser.prefs.showsAddress = on }
             // Settings › Videos wait for a click, moved as its switch moves it.
             if let on = request["waits"] as? Bool, Store.testing { browser.prefs.waitsForPlay = on }
             if let on = request["folded"] as? Bool { browser.folded = on }
@@ -3683,6 +3684,11 @@ final class Bench {
             "view": tab.built?.url?.absoluteString ?? "",
             "bench": tab.bench,
             "active": tab.id == browser?.activeID,
+            // Where the page is, as its tab would say it at rest, and whether
+            // it says it now: the setting on, the tab you're on, not edited
+            // (see AtRest.swift).
+            "atRest": AtRest.of(tab.pageAddress)?.text ?? "",
+            "atRestShown": browser.map { $0.prefs.showsAddress && tab.id == $0.activeID && $0.editingTab != tab.id && AtRest.of(tab.pageAddress) != nil } ?? false,
             "asleep": tab.asleep,
             "shy": tab.shy,
             "noisy": tab.noisy,

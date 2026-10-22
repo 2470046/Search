@@ -586,6 +586,9 @@ private struct TabPill: View {
     /// A speaker to press at the end of the pill: the page plays sound, or
     /// was muted. The ring, while the page is still coming, goes first.
     private var speaker: Bool { !editing && !tab.loading && (tab.noisy || tab.muted) }
+    /// Where the page is, said on the tab you're on (Settings › Tabs › Show
+    /// the address on the tab you're on).
+    private var atRest: Bool { prefs.showsAddress && live && !editing }
 
     /// A pinned tab is a square, an edited one is a field, everything else is
     /// its share of what is left.
@@ -738,11 +741,8 @@ private struct TabPill: View {
                 }
                 // A window the page asked for was refused (BlockedPopups).
                 PopupSign(browser: browser, tab: tab, colour: colour)
-                Text(tab.label)
-                    .font(.system(size: 12.5))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .foregroundStyle(colour)
+                TitleAtRest(label: tab.label, rest: atRest ? AtRest.of(tab.pageAddress) : nil, shown: atRest, hovering: hovering,
+                            size: 12.5, colour: colour, roomy: false)
             }
 
             Spacer(minLength: 2)
