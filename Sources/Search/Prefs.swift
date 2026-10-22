@@ -237,6 +237,10 @@ final class Preferences: ObservableObject {
     @Published var engineSuggests: Bool {
         didSet { store.set(engineSuggests, forKey: "search.suggest") }
     }
+    /// Numbers beside tabs while Command is held. Off unless asked for.
+    @Published var showsTabShortcuts: Bool {
+        didSet { store.set(showsTabShortcuts, forKey: "tabs.shortcuts") }
+    }
     @Published var showsReading: Bool {
         didSet { store.set(showsReading, forKey: "tabs.reading") }
     }
@@ -554,6 +558,7 @@ final class Preferences: ObservableObject {
         searchesSites = store.bool(forKey: "search.sites")
         engineSuggests = store.bool(forKey: "search.suggest")
         siteNotifications = store.object(forKey: "notifications.ask") as? Bool ?? true
+        showsTabShortcuts = store.bool(forKey: "tabs.shortcuts")
         showsReading = store.object(forKey: "tabs.reading") as? Bool ?? true
         shielded = store.object(forKey: "shield") as? Bool ?? true
         let keeps = store.bool(forKey: "sites.keep")
