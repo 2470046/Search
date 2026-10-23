@@ -231,11 +231,11 @@ final class ApplePasswords: ObservableObject {
 
     /// The names the helper keeps for `host` (the page's own host, www and
     /// all). Usernames only; nothing secret.
-    func logins(for host: String, tab: UUID) async -> [AppleLogin] {
+    func logins(for host: String, tab: UUID, wanted: @MainActor () -> Bool = { true }) async -> [AppleLogin] {
         guard state == .paired else { return [] }
         do {
             return try await exclusive {
-                guard let client, let key else { return [] }
+                guard wanted(), let client, let key else { return [] }
                 let reply = try await request(
                     AppleMessages.loginNames(host: host, tab: number(of: tab), client: client, key: key), timeout: 8)
                 return try AppleMessages.readLoginNames(AppleMessages.readSealed(reply, client, key: key))

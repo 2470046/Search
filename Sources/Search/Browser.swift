@@ -838,7 +838,11 @@ final class Browser: NSObject, ObservableObject {
     private func lookUpApple(_ appleHost: String, in tab: Tab, host: String, name: Bool) {
         let ask = appleAsk
         Task { [weak self] in
-            let found = await ApplePasswords.shared.logins(for: appleHost, tab: tab.id)
+            // A page that moves the caret from box to box queues no backlog:
+            // a question the caret has already left is never sent.
+            let found = await ApplePasswords.shared.logins(for: appleHost, tab: tab.id) { [weak self] in
+                self?.appleAsk == ask
+            }
             guard let self, ask == appleAsk, let field, field.tab == tab.id, tab.id == activeID,
                   ApplePasswords.offers(on: tab.pageAddress, privateTab: tab.shy) == appleHost
             else { return }
@@ -894,7 +898,8 @@ final class Browser: NSObject, ObservableObject {
                   ApplePasswords.belongs(found.sites, to: appleHost)
             else { return }
             tab.appleFill = AppleFill(host: appleHost, user: apple.user, password: found.password)
-            tab.fill(user: apple.user, password: found.password) { [weak self] worked in
+            // Over https only, on that host (Tab.fill checks both in the page).
+            tab.fill(user: apple.user, password: found.password, onlyOn: URL(string: "https://\(appleHost)/")) { [weak self] worked in
                 if !worked { self?.announce("Couldn't find the sign-in fields anymore") }
             }
         }
