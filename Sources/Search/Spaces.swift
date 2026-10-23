@@ -210,7 +210,13 @@ extension Browser {
         if Browsers.front === self || Browsers.front == nil { Spaces.current = id }
         if usesFiles { Store.settings.set(id.uuidString, forKey: "space.current") }
         if let back = parked.removeValue(forKey: id), !back.tabs.isEmpty {
-            showRow(back.tabs, active: back.active, splits: back.splits)
+            // Nothing in front there (a fresh start, see Session.startFresh):
+            // an empty tab beside its pins, as at launch, not the first pin.
+            // One that has gone from the row falls to its first tab that isn't a pin.
+            let front = back.active.map { active in
+                back.tabs.contains { $0.id == active } ? active : (back.tabs.first { $0.pin == nil } ?? back.tabs[0]).id
+            }
+            showRow(back.tabs, active: front, splits: back.splits, blank: true)
             for tab in tabs where visibleTabIDs.contains(tab.id) {
                 if !tab.wake() { tab.revive() }
             }

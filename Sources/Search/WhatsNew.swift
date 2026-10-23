@@ -41,7 +41,7 @@ enum WhatsNew {
                since: "1.0.5", get: { $0.searchesSites }, set: { $0.searchesSites = $1 }),
         Toggle(title: "Pinned rows", detail: "Pins as rows with their names, under the squares, as in Arc. Right-click a tab to pin it as a row.",
                since: "1.0.5", get: { $0.listsPins }, set: { $0.listsPins = $1 }),
-        Toggle(title: "Start with a fresh window", detail: "Your pinned tabs, and none of last time's others.",
+        Toggle(title: "Start with a fresh window", detail: "Your pinned tabs, tab groups and named tabs, and none of last time's others.",
                since: "1.0.5", get: { $0.startsFresh }, set: { $0.startsFresh = $1 }),
 
         Toggle(title: "Tab groups", detail: "Named sections of tabs. Right-click a tab to start one.",
@@ -142,7 +142,7 @@ enum WhatsNew {
                 "Find says “3 of 17”, paints every match, and can match case or whole words.",
                 "Downloads pause and resume.",
                 "Open Link in New Tab leaves you where you are; hold ⌥ to go to it.",
-                "Search can start with a fresh window: your pinned tabs, and none of last time's others.",
+                "Search can start with a fresh window: your pinned tabs, tab groups and named tabs, and none of last time's others.",
                 "Intel Macs get a download of their own.",
             ],
             better: [

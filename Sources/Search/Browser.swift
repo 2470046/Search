@@ -1859,18 +1859,7 @@ final class Browser: NSObject, ObservableObject {
         let front = saved.tabs.isEmpty || saved.active < 0 ? nil
             : restored.active.flatMap { id in tabs.first { $0.id == id } } ?? tabs.first { $0.pin == nil } ?? tabs.first
         guard let first = front else {
-            // A blank tab costs nothing until it is asked for its page. Its
-            // web view — and with it WebKit's helper processes — is built a
-            // moment after the window is up, so that the first address typed
-            // finds everything already running, and the first frame never
-            // had to share the CPU with it.
-            let tab = Tab(configuration: Web.configuration(space: spaceID))
-            adopt(tab)
-            activeID = tab.id
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak tab] in
-                guard let tab, tab.isBlank else { return }
-                _ = tab.web
-            }
+            frontBlank()
             return
         }
         activeID = first.id
@@ -1885,6 +1874,24 @@ final class Browser: NSObject, ObservableObject {
             }
         } else {
             for tab in tabs where visibleTabIDs.contains(tab.id) { _ = tab.wake() }
+        }
+    }
+
+    /// An empty tab at the end of the row, in front: a row with nothing in
+    /// front (a fresh start, see Session.startFresh) opens on one, beside its
+    /// pins, rather than on the first of them.
+    func frontBlank() {
+        // A blank tab costs nothing until it is asked for its page. Its
+        // web view — and with it WebKit's helper processes — is built a
+        // moment after the window is up, so that the first address typed
+        // finds everything already running, and the first frame never
+        // had to share the CPU with it.
+        let tab = Tab(configuration: Web.configuration(space: spaceID))
+        adopt(tab)
+        activeID = tab.id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak tab] in
+            guard let tab, tab.isBlank else { return }
+            _ = tab.web
         }
     }
 
@@ -2182,7 +2189,9 @@ final class Browser: NSObject, ObservableObject {
             row.splits.removeAll { pair in
                 !pair.tabs.allSatisfy { id in row.tabs.contains { $0.id == id } }
             }
-            if !row.tabs.contains(where: { $0.id == row.active }) { row.active = row.tabs.first?.id }
+            if let active = row.active, !row.tabs.contains(where: { $0.id == active }) {
+                row.active = row.tabs.first { $0.pin == nil }?.id ?? row.tabs.first?.id
+            }
             parked[space] = row
         }
     }
@@ -2504,7 +2513,10 @@ final class Browser: NSObject, ObservableObject {
 
     private func session(_ tabs: [Tab], active id: Tab.ID?, groups: [TabGroup]? = nil, splits: [TabSplit] = []) -> Session.Shape {
         var entries: [Session.Entry] = []
-        var active = 0
+        // A row with nothing in front — a space not yet gone to since a fresh
+        // start — stays that way in its file, rather than its first tab (a
+        // pin) coming to the front next time.
+        var active = id == nil ? -1 : 0
         var indices: [Tab.ID: Int] = [:]
         for tab in tabs {
             guard kept(tab), let url = tab.pending ?? tab.address else { continue }
@@ -4063,7 +4075,14 @@ final class Browser: NSObject, ObservableObject {
     func loadRow(_ space: UUID) -> Parked {
         let saved = readRow(space)
         var restored = restoreRow(saved, space: space, groups: saved.groups ?? [])
-        if restored.active == nil { restored.active = restored.tabs.first?.id }
+        // As restoreSession has it: nothing in front after a fresh start, so
+        // the space opens on an empty tab beside its pins (see enter); and a
+        // tab whose place no longer reads falls to the first that isn't a pin.
+        if saved.active < 0 {
+            restored.active = nil
+        } else if restored.active == nil {
+            restored.active = restored.tabs.first { $0.pin == nil }?.id ?? restored.tabs.first?.id
+        }
         restored.groups = saved.groups
         return restored
     }
@@ -4116,9 +4135,12 @@ final class Browser: NSObject, ObservableObject {
 
     /// Another space's row put on screen in place of this one (see
     /// Spaces.swift) — empty, for one that restores its own.
-    func showRow(_ row: [Tab], active: Tab.ID?, splits restored: [TabSplit] = []) {
+    /// `blank`: with nothing in front, an empty tab is, rather than the
+    /// first of the row (see frontBlank).
+    func showRow(_ row: [Tab], active: Tab.ID?, splits restored: [TabSplit] = [], blank: Bool = false) {
         splits = restored
         tabs = row
+        if active == nil, blank { return frontBlank() }
         activeID = active ?? row.first?.id
     }
 
