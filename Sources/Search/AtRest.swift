@@ -115,7 +115,9 @@ enum Hosts {
 
     /// This Mac, where plain http is the rule rather than a risk.
     static func isLoopback(_ host: String) -> Bool {
-        host == "localhost" || host.hasSuffix(".localhost") || host == "::1" || host.hasPrefix("127.")
+        // 127.x written as an address only: 127.0.0.1.example.com is a
+        // website like any other (see Dialogs.isLoopback).
+        host == "localhost" || host.hasSuffix(".localhost") || host == "::1" || (isAddress(host) && host.hasPrefix("127."))
     }
 
     /// The host in ASCII: each label written in another alphabet turned to
@@ -164,16 +166,27 @@ enum Hosts {
     /// made to look like Latin ones.
     static func safe(_ label: String) -> Bool {
         var scripts = Set<Script>()
+        var strokes = false
         for scalar in label.unicodeScalars {
             let v = scalar.value
             switch v {
             case 0x30...0x39, 0x2D: continue                  // digits, hyphen
             case 0x61...0x7A: scripts.insert(.latin)          // a–z
+            // Latin letters that pass for plain ones are left out, as Chrome
+            // leaves them out: dotless ı, kra ĸ (k), thorn þ (p), eth ð (d),
+            // ŀ, ŉ and long ſ.
+            case 0xF0, 0xFE, 0x131, 0x138, 0x13F, 0x140, 0x149, 0x17F: return false
             case 0xDF...0xF6, 0xF8...0xFF, 0x100...0x17F: scripts.insert(.latinExtra)
-            case 0x3005, 0x3007, 0x3041...0x3096, 0x309D...0x309F, 0x30A1...0x30FA, 0x30FC...0x30FF,
+            // Kana and ideographs that are a stroke, a slash or a ring, which
+            // beside Latin letters read as -, /, l or o (ー ノ 一 丨 丶 ヽ ヾ).
+            case 0x30FC, 0x30CE, 0x4E00, 0x4E28, 0x4E36, 0x30FD, 0x30FE:
+                strokes = true
+                scripts.insert(.cjk)
+            case 0x3041...0x3096, 0x309D...0x309F, 0x30A1...0x30FA, 0x30FF,
                  0x3400...0x4DBF, 0x4E00...0x9FFF:
                 scripts.insert(.cjk)
-            case 0x1100...0x11FF, 0xAC00...0xD7A3: scripts.insert(.hangul)
+            // Hangul syllables only: a lone jamo such as ᅵ reads as l or I.
+            case 0xAC00...0xD7A3: scripts.insert(.hangul)
             case 0x0620...0x064A, 0x0660...0x0669, 0x0671...0x06D3, 0x06F0...0x06FF: scripts.insert(.arabic)
             case 0x05D0...0x05EA: scripts.insert(.hebrew)
             case 0x0E01...0x0E3A, 0x0E40...0x0E4E, 0x0E50...0x0E59: scripts.insert(.thai)
@@ -184,6 +197,7 @@ enum Hosts {
         let latin = scripts.intersection([.latin, .latinExtra])
         let others = scripts.subtracting([.latin, .latinExtra])
         if others.count > 1 { return false }
+        if strokes && !latin.isEmpty { return false }
         if others.isEmpty { return true }
         // Latin beside one other script: only beside the ones written with
         // Latin letters in everyday names (as in 東京tokyo.jp).

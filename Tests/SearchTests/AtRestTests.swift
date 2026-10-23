@@ -116,6 +116,19 @@ final class AtRestTests: XCTestCase {
         XCTAssertEqual(Hosts.display(mixed), mixed)
     }
 
+    func testLatinLookalikesAndCJKStrokesShowPunycode() throws {
+        for name in ["gıthub.com", "þaypal.com", "ĸoogle.com", "app丨e.com", "goo一gle.com", "faceノbook.com", "appᅵe.com"] {
+            let ascii = Hosts.ascii(name)
+            XCTAssertEqual(Hosts.display(ascii), ascii, name)
+        }
+        XCTAssertEqual(Hosts.display(Hosts.ascii("一番.jp")), "一番.jp", "a stroke among ideographs alone is a word")
+    }
+
+    func testLoopbackOnlyAsAnAddress() throws {
+        XCTAssertEqual(rest("http://127.0.0.1.example.com/")?.kind, .notSecure)
+        XCTAssertEqual(rest("http://127.0.0.1/")?.kind, .secure)
+    }
+
     func testAnXnLabelThatDecodesToAsciiStaysAsWritten() throws {
         XCTAssertEqual(Hosts.display("xn--google-.com"), "xn--google-.com")
         XCTAssertEqual(Hosts.display("xn--!!!.com"), "xn--!!!.com")

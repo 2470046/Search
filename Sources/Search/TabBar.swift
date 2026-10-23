@@ -741,7 +741,7 @@ private struct TabPill: View {
                 }
                 // A window the page asked for was refused (BlockedPopups).
                 PopupSign(browser: browser, tab: tab, colour: colour)
-                TitleAtRest(label: tab.label, rest: atRest ? AtRest.of(tab.pageAddress) : nil, shown: atRest, hovering: hovering,
+                TitleAtRest(label: tab.label, rest: atRest ? AtRest.of(tab.restAddress) : nil, shown: atRest, hovering: hovering,
                             size: 12.5, colour: colour, roomy: false)
             }
 

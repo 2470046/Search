@@ -323,6 +323,12 @@ final class Tab: ObservableObject, Identifiable {
     /// doesn't say when.
     @Published private(set) var painted = false
     var pageAddress: URL? { committed ?? address }
+    /// What the tab says at rest about where its page is (AtRest.swift):
+    /// the document that arrived, never one only on its way. A page that
+    /// opened this tab can write into it while the address it asked for is
+    /// still loading, and that address must not vouch for what it wrote.
+    /// A tab with no view (asleep, restored) has only its address to say.
+    var restAddress: URL? { built == nil ? address : committed }
 
     func didCommit() {
         popupGesture.clear()

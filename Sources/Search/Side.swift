@@ -901,7 +901,7 @@ private struct SideRow: View {
     /// Where the page is, said on the row you're on (Settings › Tabs › Show
     /// the address on the tab you're on).
     private var atRest: Bool { prefs.showsAddress && live && !editing }
-    private var rest: AtRest? { atRest ? AtRest.of(tab.pageAddress) : nil }
+    private var rest: AtRest? { atRest ? AtRest.of(tab.restAddress) : nil }
 
     var body: some View {
         HStack(spacing: 8) {

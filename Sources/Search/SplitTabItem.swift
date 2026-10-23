@@ -121,7 +121,7 @@ private struct SplitTabHalf: View {
     /// Where the page is, said on the half you're on (Settings › Tabs › Show
     /// the address on the tab you're on).
     private var atRest: Bool { prefs.showsAddress && focused && !editing && !narrow }
-    private var rest: AtRest? { atRest ? AtRest.of(tab.pageAddress) : nil }
+    private var rest: AtRest? { atRest ? AtRest.of(tab.restAddress) : nil }
 
     private var laidOut: some View {
         row
