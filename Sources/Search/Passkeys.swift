@@ -92,8 +92,9 @@ final class Passkeys: NSObject {
     struct Caller {
         let origin: WKSecurityOrigin
         let mainFrame: Bool
-        /// The host of the page the frame is in.
-        let pageHost: String?
+        /// The page the frame is in, as committed: never an address the tab
+        /// is only on its way to, while the old page's frames still run.
+        let page: URL?
         let window: NSWindow?
         /// The page's view, for a request that waits under its field.
         weak var web: WKWebView?
@@ -278,8 +279,8 @@ final class Passkeys: NSObject {
         // from idmsa.apple.com in account.apple.com (or appleid.apple.com,
         // for Sign in with Apple), and it was refused here, so the page
         // said the browser needed updating (#679).
-        let page = caller.web?.url
-        let pageHost = (caller.pageHost ?? page?.host())?.lowercased()
+        let page = caller.page
+        let pageHost = page?.host()?.lowercased()
         let suffix = Passkeys.publicSuffix.map { test in { (name: String) in test(name as CFString) } }
         let sameSite = pageHost.map { Registrable.sameSite($0, host, isSuffix: suffix) } ?? false
         guard caller.mainFrame || (sameSite && page?.scheme?.lowercased() == scheme) else {
@@ -594,6 +595,16 @@ final class Passkeys: NSObject {
         return !suffix(rp as CFString)
     }
 
+    /// The address of the page a view shows, once it is that page's: a
+    /// tab's committed address. WKWebView.url moves as soon as a navigation
+    /// starts, while the page before and its frames can still ask; one that
+    /// belongs to no tab keeps its own url.
+    @MainActor static func committed(_ web: WKWebView?) -> URL? {
+        guard let web else { return nil }
+        if let tab = PopupGestureRelay.tab(for: web) { return tab.committed }
+        return web.url
+    }
+
     /// WebKit's own test for a public suffix, from the list macOS keeps.
     /// Private to CFNetwork: without it, a page's own host is the only
     /// relying party it gets.
@@ -854,7 +865,7 @@ final class PasskeyRelay: NSObject, WKScriptMessageHandlerWithReply {
             let caller = Passkeys.Caller(
                 origin: message.frameInfo.securityOrigin,
                 mainFrame: message.frameInfo.isMainFrame,
-                pageHost: message.webView?.url?.host(),
+                page: Passkeys.committed(message.webView),
                 window: message.webView?.window,
                 web: message.webView
             )
