@@ -31,6 +31,13 @@ enum Reader {
         "#office-reader figure{margin:1.8em 0}",
         "#office-reader figcaption{font:400 13px/1.5 -apple-system,sans-serif;",
         "color:#a3a3a3;margin-top:.6em}",
+        // A caption and its credit, which the site's own layout kept apart.
+        "#office-reader figcaption > * + *{margin-left:.35em}",
+        // The byline and a summary, quieter than the text.
+        "#office-reader .office-above{font:400 14px/1.55 -apple-system,sans-serif;",
+        "color:#555;margin:0 0 1.6em}",
+        "#office-reader .office-above ul{padding-left:1.2em}",
+        "#office-reader .office-above h2{margin:.4em 0}",
         "#office-reader a{color:#171717;text-underline-offset:3px}",
         "#office-reader h2,#office-reader h3{font:600 20px/1.3 -apple-system,sans-serif;",
         "margin:2em 0 .6em}",
@@ -154,6 +161,30 @@ enum Reader {
         framed[z].setAttribute('data-office-height', Math.round(framed[z].getBoundingClientRect().height));
       }
 
+      // Bloomberg keeps an article's byline, its takeaways and the video it
+      // opens with between the headline and the text, outside the part with
+      // the most prose. Such parts of its head come along, in the page's
+      // order: those drawn on the page, and never one from a menu, a rail or
+      // a footer. Class names are matched in part and whatever their case,
+      // as sites build them (BasicByline_byline__VTyoS); a subheading is an
+      // h2.
+      var heading = document.querySelector('h1');
+      var above = [];
+      if (heading) {
+        var found = document.querySelectorAll(
+          '[class*="byline" i],[class*="takeaways" i],[class*="lede" i],h2'
+        );
+        for (var a = 0; a < found.length; a++) {
+          var part = found[a];
+          if (part.contains(article) || article.contains(part) ||
+              above.some(function (o) { return o.contains(part); })) continue;
+          if (!(heading.compareDocumentPosition(part) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+          if (!(article.compareDocumentPosition(part) & Node.DOCUMENT_POSITION_PRECEDING)) continue;
+          if (part.closest('nav, aside, footer, [role="banner"]') || !part.getClientRects().length) continue;
+          above.push(part);
+        }
+      }
+
       // Every picture is resolved while the real page is still standing.
       //
       // currentSrc is what the browser actually chose and loaded, after srcset,
@@ -165,6 +196,9 @@ enum Reader {
                   'data-full-src', 'data-hi-res-src', 'data-image', 'data-echo'];
       var pictures = Array.prototype.slice.call(article.querySelectorAll('img'));
       if (lead) pictures = pictures.concat(Array.prototype.slice.call(lead.querySelectorAll('img')));
+      above.forEach(function (o) {
+        pictures = pictures.concat(Array.prototype.slice.call(o.querySelectorAll('img')));
+      });
       for (var i = 0; i < pictures.length; i++) {
         var picture = pictures[i];
         picture.setAttribute('loading', 'eager');
@@ -188,8 +222,13 @@ enum Reader {
       // only for screen readers, a menu folded shut or the mobile copy of a
       // table would all come into view. Pictures' sources and the like are
       // hidden by WebKit itself, which the reading page keeps.
+      // Not a box that holds paragraphs, though: an article's folded-away
+      // rest is still the article. The head's parts are looked at the same.
       var inherent = /^(SOURCE|TRACK|PARAM|AREA|TEMPLATE|BR|WBR|SCRIPT|STYLE|NOSCRIPT)$/;
-      var all = article.querySelectorAll('*');
+      var all = [];
+      [article].concat(above).forEach(function (root) {
+        all = all.concat(Array.prototype.slice.call(root.querySelectorAll('*')));
+      });
       for (var h = 0; h < all.length; h++) {
         var el = all[h];
         if (inherent.test(el.tagName) || el.closest('details:not([open])')) continue;
@@ -201,14 +240,18 @@ enum Reader {
           // reader: a box a pixel square, its overflow cut off.
           gone = box.width <= 1 && box.height <= 1;
         }
-        if (gone) el.setAttribute('data-office-hidden', '');
+        if (gone && !(look.display === 'none' && el.querySelector('p'))) el.setAttribute('data-office-hidden', '');
       }
 
-      var heading = document.querySelector('h1');
       var title = (heading && heading.innerText.trim()) || document.title;
 
       var wrap = document.createElement('div');
       wrap.innerHTML = article.innerHTML;
+      for (var o = above.length - 1; o >= 0; o--) {
+        var copy = above[o].cloneNode(true);
+        copy.classList.add('office-above');
+        wrap.insertBefore(copy, wrap.firstChild);
+      }
 
       var hidden = wrap.querySelectorAll('[data-office-hidden]');
       for (var d = 0; d < hidden.length; d++) hidden[d].remove();
@@ -226,16 +269,39 @@ enum Reader {
           parts[x].removeAttribute('class');
           parts[x].removeAttribute('style');
         }
-        wrap.insertBefore(opening, wrap.firstChild);
+        var after = wrap.firstChild;
+        while (after && after.classList && after.classList.contains('office-above')) after = after.nextSibling;
+        wrap.insertBefore(opening, after);
+      }
+
+      // A picture in a button, a click to see it larger, is the picture:
+      // Bloomberg puts every photo in one. The button goes and what it holds
+      // stays.
+      var pressed = wrap.querySelectorAll('button');
+      for (var b = 0; b < pressed.length; b++) {
+        if (!pressed[b].querySelector('img, picture, video')) continue;
+        while (pressed[b].firstChild) pressed[b].parentNode.insertBefore(pressed[b].firstChild, pressed[b]);
+        pressed[b].remove();
       }
 
       // What was arranged around the words rather than being part of them.
       // Not header: an article's opening image lives there as often as not.
+      // A video.js player's controls, title bar and read-outs go too; the
+      // video stays.
       var clutter = wrap.querySelectorAll(
         'script,style,noscript,form,nav,aside,footer,button,input,select,textarea,' +
-        '[role="complementary"],[role="navigation"],[role="banner"],[aria-hidden="true"]'
+        '[role="complementary"],[role="navigation"],[role="banner"],[aria-hidden="true"],' +
+        '.video-js > [class*="vjs-"]:not(video)'
       );
       for (var c = 0; c < clutter.length; c++) clutter[c].remove();
+
+      // So does a box inviting you to a newsletter, which Bloomberg sets in
+      // the middle of the text. Only a short one: a newsletter's own page
+      // may keep its whole text in a box named the same.
+      var invites = wrap.querySelectorAll('[class*="newsletter" i]');
+      for (var n = 0; n < invites.length; n++) {
+        if (invites[n].querySelectorAll('p').length < 3) invites[n].remove();
+      }
 
       // Embedded video is part of the article, and so is a chart or a map
       // from one of the chart makers a newsroom puts in it, at the height it
@@ -256,6 +322,50 @@ enum Reader {
           frames[f].className = 'office-chart';
         } else {
           frames[f].remove();
+        }
+      }
+
+      // A video's poster, which its player also shows as a picture beside it:
+      // once is enough.
+      var videos = wrap.querySelectorAll('video'), posters = [];
+      for (var v = 0; v < videos.length; v++) {
+        if (videos[v].poster) posters.push(videos[v].poster);
+      }
+      var stills = wrap.querySelectorAll('img');
+      for (var t = 0; t < stills.length; t++) {
+        if (posters.indexOf(stills[t].src) >= 0 && !stills[t].closest('video')) stills[t].remove();
+      }
+
+      // A video its player fed from the page itself, through a blob: address,
+      // has nothing to play once that player is gone. It plays from the plain
+      // stream it names beside that, which WebKit plays on its own, with
+      // controls and never by itself, and fetches nothing of until play is
+      // pressed; with none, it is its poster; with no poster, it goes.
+      for (var q = 0; q < videos.length; q++) {
+        var video = videos[q], fed = /^blob:/.test(video.getAttribute('src') || ''), plain = '';
+        var named = video.querySelectorAll('source');
+        for (var m = 0; m < named.length; m++) {
+          if (/^blob:/.test(named[m].getAttribute('src') || '')) fed = true;
+          else if (!plain && /^https?:/.test(named[m].src)) plain = named[m].src;
+        }
+        if (!fed) continue;
+        if (plain) {
+          for (var r = 0; r < named.length; r++) named[r].remove();
+          video.setAttribute('preload', 'metadata');
+          video.setAttribute('src', plain);
+          video.setAttribute('controls', '');
+          video.setAttribute('playsinline', '');
+          video.removeAttribute('autoplay');
+          // Out of the player's box, which the page's stylesheet still sizes
+          // for the player.
+          var player = video.parentNode.closest('.video-js');
+          if (player) player.parentNode.replaceChild(video, player);
+        } else if (video.poster) {
+          var still = document.createElement('img');
+          still.setAttribute('src', video.poster);
+          video.parentNode.replaceChild(still, video);
+        } else {
+          video.remove();
         }
       }
 

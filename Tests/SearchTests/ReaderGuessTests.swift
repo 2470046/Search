@@ -20,6 +20,7 @@ final class ReaderGuessTests: XCTestCase {
         NSApp.setActivationPolicy(.prohibited)
         server = try LocalPageServer([
             "/photo.svg": .init(type: "image/svg+xml", body: Self.photo),
+            "/photo2.svg": .init(type: "image/svg+xml", body: Self.photo),
             "/ft": .init(type: Self.html, body: """
             <!doctype html><html><head><title>FT</title></head><body>
             <h1>The headline</h1>
@@ -39,10 +40,10 @@ final class ReaderGuessTests: XCTestCase {
             <h1>The headline</h1>
             <div class="BasicByline_byline__VTyoS">By Someone</div>
             <ul class="Takeaways_takeaways">
-              <li>One point</li><li>Another</li>
+              <li>One point</li> <li>Another</li>
             </ul>
             <article>\(Self.prose)
-              <button><img src="/photo.svg" width="800" height="450" alt="In a button"></button>
+              <button><img src="/photo2.svg" width="800" height="450" alt="In a button"></button>
               <div class="video-js"><video src="blob:http://127.0.0.1/abc" autoplay poster="/photo.svg"><source src="blob:http://127.0.0.1/abc"><source src="https://example.invalid/clip.mp4"></video><div class="vjs-control-bar">Play</div></div>
               <div class="newsletter-box"><p>Sign up</p></div>
             </article>
@@ -71,6 +72,34 @@ final class ReaderGuessTests: XCTestCase {
                        "a chart maker's frame stays at its height; a frame in a figure from elsewhere goes")
         XCTAssertEqual(found?["pictures"] as? [String], ["Opening"], "the opening photo, and nothing from the footer")
         XCTAssertEqual(found?["topper"] as? Bool, false, "the topper's class goes with it")
+    }
+
+    func testTheHeadComesAndAVideoPlaysFromItsPlainSource() async throws {
+        let web = try await read("/bloomberg")
+        let found = try await call(web, """
+        var reader = document.getElementById('office-reader');
+        var video = reader.querySelector('video');
+        return {
+          above: Array.prototype.map.call(reader.querySelectorAll('.office-above'), function (e) { return e.textContent.trim().replace(/\\s+/g, ' '); }),
+          buttons: reader.querySelectorAll('button').length,
+          inButton: !!reader.querySelector('img[alt="In a button"]'),
+          src: video ? video.getAttribute('src') : null,
+          preload: video ? video.getAttribute('preload') : null,
+          autoplay: video ? video.hasAttribute('autoplay') : null,
+          controls: video ? video.hasAttribute('controls') : null,
+          bar: !!reader.querySelector('.vjs-control-bar'),
+          newsletter: !!reader.querySelector('.newsletter-box')
+        };
+        """) as? [String: Any]
+        XCTAssertEqual(found?["above"] as? [String], ["By Someone", "One point Another"])
+        XCTAssertEqual(found?["buttons"] as? Int, 0)
+        XCTAssertEqual(found?["inButton"] as? Bool, true, "a picture in a button is the picture")
+        XCTAssertEqual(found?["src"] as? String, "https://example.invalid/clip.mp4")
+        XCTAssertEqual(found?["preload"] as? String, "metadata", "nothing downloads before play")
+        XCTAssertEqual(found?["autoplay"] as? Bool, false)
+        XCTAssertEqual(found?["controls"] as? Bool, true)
+        XCTAssertEqual(found?["bar"] as? Bool, false)
+        XCTAssertEqual(found?["newsletter"] as? Bool, false)
     }
 
     // MARK: - plumbing
