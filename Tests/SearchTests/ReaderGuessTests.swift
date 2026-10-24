@@ -102,11 +102,24 @@ final class ReaderGuessTests: XCTestCase {
         XCTAssertEqual(found?["newsletter"] as? Bool, false)
     }
 
+    /// White unless reading mode follows the window: then dark when asked,
+    /// and the article's own repeated headline goes.
+    func testTheLookIsLightUnlessAskedForDark() async throws {
+        let light = try await read("/ft")
+        let plain = try await call(light, "return [document.documentElement.getAttribute('data-office-look'), getComputedStyle(document.body).backgroundColor];") as? [String]
+        XCTAssertEqual(plain, ["light", "rgb(255, 255, 255)"])
+        let dark = try await read("/ft", look: "dark")
+        let shown = try await call(dark, "return [document.documentElement.getAttribute('data-office-look'), getComputedStyle(document.body).backgroundColor, document.querySelectorAll('#office-reader h1').length];") as? [Any]
+        XCTAssertEqual(shown?[0] as? String, "dark")
+        XCTAssertEqual(shown?[1] as? String, "rgb(28, 28, 28)")
+        XCTAssertEqual(shown?[2] as? Int, 1)
+    }
+
     // MARK: - plumbing
 
     private var holding: [Loaded] = []
 
-    private func read(_ path: String) async throws -> WKWebView {
+    private func read(_ path: String, look: String? = nil) async throws -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .nonPersistent()
         let web = WKWebView(frame: NSRect(x: 0, y: 0, width: 1000, height: 800), configuration: configuration)
@@ -115,7 +128,9 @@ final class ReaderGuessTests: XCTestCase {
         web.navigationDelegate = loaded
         web.load(URLRequest(url: server.url(path)))
         try await loaded.wait()
-        let answer = try await call(web, Reader.script, ["sheet": Reader.sheet], world: .page)
+        var arguments: [String: Any] = ["sheet": Reader.sheet]
+        if let look { arguments["readerLook"] = look }
+        let answer = try await call(web, Reader.script, arguments, world: .page)
         XCTAssertEqual(answer as? String, "read")
         return web
     }

@@ -344,6 +344,9 @@ final class Tab: ObservableObject, Identifiable {
         // sending its window there, then writing) is that page's, not the
         // one before it, and is offered nothing that belonged to it.
         if let url = built?.url { committed = url }
+        // A link followed out of an article is a page, not an article: ⇧⌘R
+        // reads it rather than reloading it, and the article's corner goes.
+        reader = false
         // A page arrived after all: the address is its own again.
         if held != nil, let url = built?.url, url.absoluteString != "about:blank" {
             held = nil
@@ -438,6 +441,7 @@ final class Tab: ObservableObject, Identifiable {
                 "title": twin.title ?? found["title"] as? String ?? "",
                 "from": from,
                 "sheet": Reader.sheet,
+                "readerLook": Reader.look.rawValue,
             ]
             self.web.callAsyncJavaScript(Reader.show, arguments: arguments, in: nil, in: Web.world) { [weak self] result in
                 let worked = (try? result.get()) as? String == "read"
@@ -449,7 +453,8 @@ final class Tab: ObservableObject, Identifiable {
 
     /// The page's own article, worked out from the page (see Reader.script).
     private func guess(_ done: @escaping (Bool) -> Void) {
-        web.callAsyncJavaScript(Reader.script, arguments: ["sheet": Reader.sheet], in: nil, in: .page) { [weak self] result in
+        let arguments: [String: Any] = ["sheet": Reader.sheet, "readerLook": Reader.look.rawValue]
+        web.callAsyncJavaScript(Reader.script, arguments: arguments, in: nil, in: .page) { [weak self] result in
             let worked = (try? result.get()) as? String == "read"
             if worked { self?.reader = true }
             done(worked)

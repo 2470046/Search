@@ -386,6 +386,12 @@ final class Preferences: ObservableObject {
     @Published var readsTwins: Bool {
         didSet { store.set(readsTwins, forKey: "reader.twins") }
     }
+    /// Reading mode goes dark with the window, with a light/dark/window
+    /// switch in its corner (see ReaderLook). Off unless asked for: the
+    /// article is white, as it always was.
+    @Published var readerFollowsLook: Bool {
+        didSet { store.set(readerFollowsLook, forKey: "reader.follows") }
+    }
     /// A link from another app opens in a small window of its own (see
     /// Little.swift). Off unless asked for.
     @Published var littleLinks: Bool {
@@ -711,6 +717,7 @@ final class Preferences: ObservableObject {
         peekClick = store.string(forKey: "links.peekClick").flatMap(PeekClick.init(rawValue:)) ?? .shift
         pinsPeek = store.bool(forKey: "pins.peek")
         readsTwins = store.bool(forKey: "reader.twins")
+        readerFollowsLook = store.bool(forKey: "reader.follows")
         littleLinks = store.bool(forKey: "links.little")
         bookmarksBar = store.bool(forKey: "bookmarks.bar")
         alwaysShowsDownloads = store.bool(forKey: "downloads.button")

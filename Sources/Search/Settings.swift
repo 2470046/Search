@@ -362,6 +362,10 @@ struct SettingsPanel: View {
                 Switch(on: $prefs.readsTwins)
             }
             Rule()
+            Line("Reading mode follows light and dark", "In a dark window the article is light on dark. A small switch in its corner makes an article light, dark or as the window is, and is kept for the next one") {
+                Switch(on: $prefs.readerFollowsLook)
+            }
+            Rule()
             Line("Open links from other apps in a small window", "To read and close, or keep with Open in Search (⌘O)") {
                 Switch(on: $prefs.littleLinks)
             }
