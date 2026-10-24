@@ -29,7 +29,7 @@ struct SideBar: View {
     @Namespace private var before
     @Namespace private var after
 
-    @State private var groupFrames: [UUID: CGRect] = [:]
+    @State private var groupFrames: [UUID: GroupDropFrame] = [:]
 
     /// A tab carried over the pins, or a pin over the tabs, and where it
     /// would land (see PinDrop).
@@ -524,6 +524,7 @@ struct SideBar: View {
                         // sits in front of them in the real list.
                         .modifier(Carried(index: index, count: loose.count, step: step, vertical: true,
                                           space: "rows", onDropTab: { source, point in drop(source, at: point) },
+                                          groupDestination: { source, point in destination(source, at: point) },
                                           outside: { browser.dragOut(tab) }, browser: browser, tab: tab,
                                           cross: { cross(tab, $0, from: .rows) },
                                           land: { land(tab, $0) }, faded: crossing?.tab == tab.id) {
@@ -546,11 +547,14 @@ struct SideBar: View {
         .onPreferenceChange(GroupDropFrames.self) { groupFrames = $0 }
     }
 
+    private func destination(_ tab: Tab, at point: CGPoint) -> GroupDropTarget? {
+        guard prefs.usesTabGroups, tab.pin == nil else { return nil }
+        return GroupDropFrames.resolve(point, frames: groupFrames, groups: browser.tabGroups,
+                                       excluding: tab.id, vertical: true)
+    }
+
     private func drop(_ tab: Tab, at point: CGPoint) {
-        guard prefs.usesTabGroups, tab.pin == nil else { return }
-        if let id = groupFrames.first(where: { $0.value.contains(point) })?.key {
-            browser.move(tab, toGroup: id)
-        }
+        if let target = destination(tab, at: point) { browser.move(tab, toGroup: target) }
     }
 
     private func groupRows(_ group: TabGroup) -> some View {
@@ -564,6 +568,7 @@ struct SideBar: View {
                     .modifier(Carried(index: index, count: members.count,
                                       step: rowHeight + SideBar.gap, vertical: true,
                                       space: "rows", onDropTab: { source, point in drop(source, at: point) },
+                                      groupDestination: { source, point in destination(source, at: point) },
                                       outside: { browser.dragOut(tab) }, browser: browser, tab: tab,
                                       cross: { cross(tab, $0, from: .rows) },
                                       land: { land(tab, $0) }, faded: crossing?.tab == tab.id) {
@@ -642,7 +647,7 @@ struct SideBar: View {
         case .loose:
             guard tab.pin != nil else { return nil }
             let inRows = CGPoint(x: point.x - frames.rows.minX, y: point.y - frames.rows.minY)
-            if prefs.usesTabGroups, let id = groupFrames.first(where: { $0.value.contains(inRows) })?.key {
+            if prefs.usesTabGroups, let id = groupFrames.values.first(where: { $0.rect.contains(inRows) })?.group {
                 return .group(id)
             }
             let loose = looseTabs
