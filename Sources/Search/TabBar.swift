@@ -1262,9 +1262,25 @@ struct TabPress: ViewModifier {
     @Binding var selected: Bool
     let act: () -> Void
 
+    /// How far the hand may go before the press gives way to the row's
+    /// drag, which starts at 5. A long press that never gave way (as this
+    /// was first written, with no limit) kept the press to itself: the drag
+    /// that carries a row or a pin waited for it to fail, which it only did
+    /// at the release, so nothing moved under the hand — the row jumped to
+    /// its place on letting go, and a pin held still a moment before
+    /// letting go wasn't moved at all.
+    static let travel: CGFloat = 4
+
     func body(content: Content) -> some View {
-        content.onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity, pressing: { down in
+        content.onLongPressGesture(minimumDuration: .infinity, maximumDistance: TabPress.travel, pressing: { down in
             if !down {
+                // Given way to a drag, the button still down: what the press
+                // did stands until the release, so the release can't take
+                // it for a fresh click on the tab now on screen.
+                if NSEvent.pressedMouseButtons & 1 != 0 {
+                    TabPress.untilRelease { selected = false }
+                    return
+                }
                 // The row's release handler must see which press selected it.
                 DispatchQueue.main.async { selected = false }
                 return
@@ -1273,6 +1289,17 @@ struct TabPress: ViewModifier {
             selected = !active
             if selected { act() }
         }, perform: {})
+    }
+
+    /// Once, at the left button's release.
+    private static func untilRelease(_ act: @escaping () -> Void) {
+        var monitor: Any?
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { event in
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+            DispatchQueue.main.async(execute: act)
+            return event
+        }
     }
 }
 
@@ -1293,12 +1320,12 @@ struct OneClick: ViewModifier {
     let double: Bool
     let act: () -> Void
 
+    /// One gesture whose count changes, not two in turn: a pin becomes
+    /// the one on screen as the button goes down (TabPress), and swapping
+    /// one tap for the other then made the square anew under the hand, which
+    /// dropped the drag that had picked it up.
     func body(content: Content) -> some View {
-        if double {
-            content.onTapGesture(count: 2, perform: act)
-        } else {
-            content.onTapGesture(perform: act)
-        }
+        content.onTapGesture(count: double ? 2 : 1, perform: act)
     }
 }
 
