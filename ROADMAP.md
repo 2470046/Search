@@ -43,6 +43,16 @@ in it is stale. Whoever works on Search keeps it that way, with `./ideas`
 - [ ] **Apple Passwords under the sign-in field** Passwords saved in the Mac's Passwords app listed under the sign-in field, as in Safari, without the iCloud Passwords extension. It goes through Apple's own helper, which only a Developer ID build may launch. Off unless turned on. *([#425](https://github.com/driceroland/Search/issues/425), email ×3)*
 - [ ] **Profiles: separate sets of spaces with their own sign-ins, history and bookmarks** A profile above spaces, as in Chrome and Arc: its own spaces, sign-ins, history and bookmarks, in windows of its own. Personal is everything there is today. *([#459](https://github.com/driceroland/Search/issues/459))*
 
+## Done, in the next version
+
+- [x] **Pressing a pin's number again** ⌘1–⌘9 pressed again on the pin you are on takes you back to the tab you were on before it. Off by default. *(email)*
+- [x] **A right-click menu on the bookmarks bar** *([#438](https://github.com/driceroland/Search/issues/438), [#439](https://github.com/driceroland/Search/pull/439))*
+- [x] **Copy Clean Link** In a tab's menu: copy its address without tracking parameters. *([#594](https://github.com/driceroland/Search/issues/594))*
+- [x] **Websites in the side panel** Keep a site such as claude.ai or chatgpt.com open in the side panel beside the page, not only an extension's panel. Off until you put one there. *(email)*
+- [x] **Ask before quitting** An optional question before ⌘Q quits Search, off by default. *([#653](https://github.com/driceroland/Search/issues/653), [#659](https://github.com/driceroland/Search/pull/659))*
+- [x] **Tab numbers while ⌘ is held** Holding ⌘ shows which tab ⌘1–9 picks, off by default. *([#654](https://github.com/driceroland/Search/issues/654), [#658](https://github.com/driceroland/Search/pull/658))*
+- [x] **Native picture in picture as a choice** macOS's own picture in picture as an alternative to the floating video. *([#591](https://github.com/driceroland/Search/issues/591))*
+
 ## Now — fixes for the next update
 
 - [ ] **Spaces sometimes don't switch** *(email)*
@@ -56,15 +66,14 @@ in it is stale. Whoever works on Search keeps it that way, with `./ideas`
 - [ ] **Arc import twice: a second pin** Bringing Arc over again adds a second pin for a site whose pin has moved address (Gmail): the guard compares the pin's current address. *([#482](https://github.com/driceroland/Search/issues/482))*
 - [ ] **Proxy for the whole browser** HTTP and SOCKS5 proxy in Settings, off by default, everything through it. *([#510](https://github.com/driceroland/Search/pull/510))*
 - [ ] **iCloud Passwords keeps its pairing** On macOS 27 iCloud Passwords asks for its code again every couple of minutes; the keep-alive no longer holds. *([#610](https://github.com/driceroland/Search/issues/610))*
-- [ ] **A site allowed your location still gets nothing** After Allow, the page receives no position. *([#387](https://github.com/driceroland/Search/issues/387))*
 - [ ] **A peek opens at the default zoom** A link opened in a peek starts at 100% instead of the default page zoom from Settings, or the site's own zoom. *([#691](https://github.com/driceroland/Search/issues/691))*
+- [ ] **One letter completes a site you visit often** Typing x then Return goes to x.com when it's a site you visit often; inline completion starts at two letters today. *([#696](https://github.com/driceroland/Search/issues/696))*
 
 ## Next — small additions people asked for
 
 - [ ] **Box Tools** Let app.box.com reach its local helper on this Mac, as Chrome does. The person who asked offered to test a build. *(email)*
 - [ ] **1Password desktop app, in the FAQ** 1Password with its desktop app. Say in the FAQ that Search is added in 1Password › Settings › Browser › Add Browser.
 - [ ] **A user agent per tab** Presets and a string of your own, per tab, as in Safari's Develop menu; shares its plumbing with Responsive Design Mode. *([#460](https://github.com/driceroland/Search/issues/460))*
-- [ ] **Copy the username in the password list** Settings › Passwords lets you copy a password but not the username next to it, not even select it. *([#634](https://github.com/driceroland/Search/issues/634))*
 - [ ] **Icons drawn as SVG** A site whose only icon is an SVG shows a letter: only bitmap icons are decoded today. Draw SVG icons without opening a new decoder in the app. *([#680](https://github.com/driceroland/Search/issues/680))*
 - [ ] **Esc twice to leave full screen** A switch, as in Arc: the first Esc in full screen stays and says so, a second one leaves. *([#678](https://github.com/driceroland/Search/pull/678))*
 - [ ] **Dev builds named after their branch** A development build carries its branch's name and its own icon, so several builds can run side by side. *([#475](https://github.com/driceroland/Search/pull/475))*
@@ -133,16 +142,16 @@ in it is stale. Whoever works on Search keeps it that way, with `./ideas`
 - [ ] **⌘L again closes the address** A second ⌘L puts away the address field it opened, as Esc does. *(email)*
 - [ ] **Tabs that pause, not reload** An option to keep a resting tab's page and let WebKit suspend it, off by default. *([#520](https://github.com/driceroland/Search/issues/520))*
 - [ ] **Option-Command arrows to move between tabs** *([#532](https://github.com/driceroland/Search/issues/532))*
-- [ ] **Share the screen with its sound** *([#540](https://github.com/driceroland/Search/issues/540))*
-- [ ] **Bitwarden popup spins** Its background never answers the popup (no runtime.onConnect listener). *([#541](https://github.com/driceroland/Search/issues/541))*
+- [ ] **Share the screen with its sound** WebKit gives a shared screen no sound track, even when a call asks for one; it would mean capturing the sound ourselves and feeding it to the page. *([#540](https://github.com/driceroland/Search/issues/540))*
 - [ ] **Floating video flickers popping out** The video shifts and flickers as it pops out of the page. *([#543](https://github.com/driceroland/Search/issues/543), [#547](https://github.com/driceroland/Search/pull/547), [#562](https://github.com/driceroland/Search/pull/562))*
 - [ ] **Float a meeting page when you switch away** *([#544](https://github.com/driceroland/Search/issues/544), [#547](https://github.com/driceroland/Search/pull/547))*
-- [ ] **CleanMyMac flags Search as unwanted** *([#556](https://github.com/driceroland/Search/issues/556))*
+- [ ] **CleanMyMac flags Search as unwanted** CleanMyMac's "Mac Search - PUA" is a false positive: Search is a notarised Developer ID app, and MacPaw has been told. *([#556](https://github.com/driceroland/Search/issues/556))*
 - [ ] **Reading mode follows dark mode** *([#563](https://github.com/driceroland/Search/issues/563), [#564](https://github.com/driceroland/Search/pull/564), [#565](https://github.com/driceroland/Search/pull/565), [#566](https://github.com/driceroland/Search/pull/566))*
 - [ ] **YouTube dislike counts don't show** Return YouTube Dislike installs but its counts never appear on YouTube; a userscript doing the same works. *([#588](https://github.com/driceroland/Search/issues/588))*
 - [ ] **Some sites stay on http** Choose hosts that are never sent to https. *([#671](https://github.com/driceroland/Search/issues/671))*
 - [ ] **PDFs sent as downloads open in a tab** A setting to show a PDF the site sends as a download, with Save still there, off by default. *([#672](https://github.com/driceroland/Search/issues/672))*
 - [ ] **Dragging tabs into and within a group** Adding a fourth tab to a group, and reordering inside one, reported not to work. *([#673](https://github.com/driceroland/Search/issues/673))*
+- [ ] **Trackpad taps for spaces and tabs** A light tap from the trackpad when a space swipe, a tab drag or the column's edge crosses the point where letting go changes something, as the back swipe and Split View's divider already do. *([#695](https://github.com/driceroland/Search/issues/695))*
 
 ## Not on the list, for now
 
@@ -193,4 +202,5 @@ in it is stale. Whoever works on Search keeps it that way, with `./ideas`
 - **Icons follow the page** A site that changes its icon after load (GitHub with its theme) shows the new one; light and dark icons are kept apart. Duplicate of 239 *([#423](https://github.com/driceroland/Search/issues/423))*
 - **Move the window by the top of a page** As in Arc and Dia: dragging an empty part of a site's top bar, or of a page's top edge, moves the window. Off unless turned on. In 1.0.5 the page gets a bar of its own above it, which moves the window like a title bar; no need to take presses from the page itself. *([#427](https://github.com/driceroland/Search/pull/427))*
 - **GitHub's Files page slow to paint** A GitHub pull request's Files page can stay blank for tens of seconds while its CSS comes in; a bare WKWebView is about as slow. Waiting on a comparison with Safari. No reply; reopen anytime. *([#458](https://github.com/driceroland/Search/issues/458))*
+- **Bitwarden popup spins** Its background never answers the popup (no runtime.onConnect listener). Stopped happening for the reporter; reopen anytime. *([#541](https://github.com/driceroland/Search/issues/541))*
 - **Ask before a site's first pop-up** Ask even for a pop-up after a click, beyond what Safari and Chrome do. Goes further than Safari and Chrome; 1.0.6 brings Safari's blocked pop-up sign instead. *([#656](https://github.com/driceroland/Search/issues/656), [#661](https://github.com/driceroland/Search/pull/661))*
