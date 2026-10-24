@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import Combine
 
 // The side panel: beside the page on the side away from the column (on the
 // right with the tabs across the top), closed until something asks for it,
@@ -99,7 +100,7 @@ extension Browser {
     @discardableResult
     func showSiteInPanel(_ url: URL) -> Bool {
         guard prefs.sitesInPanel, PanelSites.allowed(url), extensionPopup == nil else { return false }
-        if sidePanelShown, case .site = sidePanel, SidePanelPages.shared.web(in: self)?.url?.host() == url.host() {
+        if sidePanelShown, case .site = sidePanel, SidePanelPages.shared.siteArrived(in: self)?.host() == url.host() {
             closeSidePanel()
             return true
         }
@@ -130,7 +131,7 @@ extension Browser {
     /// The site in the panel, as a tab of its own, and the panel closed.
     func sitePanelToTab() {
         guard case .site(let first, _) = sidePanel else { return }
-        let url = SidePanelPages.shared.web(in: self)?.url ?? first
+        let url = SidePanelPages.shared.siteArrived(in: self) ?? first
         closeSidePanel()
         open(url, foreground: true)
     }
@@ -139,7 +140,7 @@ extension Browser {
     /// that space is.
     func sitePanelFollowsSpace() {
         guard case .site(let first, let space) = sidePanel, space != spaceID else { return }
-        let url = SidePanelPages.shared.web(in: self)?.url ?? first
+        let url = SidePanelPages.shared.siteArrived(in: self) ?? first
         SidePanelPages.shared.loadSite(url, space: spaceID, in: self)
         sidePanel = .site(url: url, space: spaceID)
     }
@@ -186,6 +187,32 @@ final class SidePanelPages: NSObject {
     /// The page up in this window's panel, for SidePanelView and the bench.
     func web(in browser: Browser) -> WKWebView? { pages[ObjectIdentifier(browser)]?.web }
 
+    /// A website's page that arrived (committed) in this window's panel: what
+    /// its line names, what goes to a tab and what follows a space switch.
+    /// Not where it is only on its way to.
+    func siteArrived(in browser: Browser) -> URL? {
+        (pages[ObjectIdentifier(browser)]?.delegate as? SitePanelDelegate)?.arrived
+    }
+
+    fileprivate func siteDelegate(in browser: Browser) -> SitePanelDelegate? {
+        pages[ObjectIdentifier(browser)]?.delegate as? SitePanelDelegate
+    }
+
+    /// For the bench: the website's page as its line shows it, and how often
+    /// it was made again after a crash.
+    func siteReport(in browser: Browser) -> [String: Any] {
+        guard let delegate = siteDelegate(in: browser) else { return [:] }
+        return ["arrived": delegate.arrived?.absoluteString ?? "", "line": SiteLine.Seen.name(delegate.arrived),
+                "reloads": delegate.reloads, "gaveUp": delegate.gaveUp]
+    }
+
+    /// For the bench: WebKit's word that the page's process is gone, as a
+    /// crash gives it.
+    func siteCrashed(in browser: Browser) {
+        guard let page = pages[ObjectIdentifier(browser)], let delegate = page.delegate as? SitePanelDelegate else { return }
+        delegate.webViewWebContentProcessDidTerminate(page.web)
+    }
+
     @available(macOS 15.4, *)
     func load(_ url: URL, from context: WKWebExtensionContext, in browser: Browser) -> Bool {
         let key = ObjectIdentifier(browser)
@@ -215,11 +242,13 @@ final class SidePanelPages: NSObject {
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
         let web = WKWebView(frame: NSRect(x: 0, y: 0, width: 380, height: 600), configuration: configuration)
         let delegate = SitePanelDelegate(browser: browser)
+        delegate.watch(web)
         web.navigationDelegate = delegate
         web.uiDelegate = delegate
         web.allowsMagnification = true
         web.allowsBackForwardNavigationGestures = true
-        if #available(macOS 13.3, *) { web.isInspectable = true }
+        // The Web Inspector as for a tab, by the same rule (Web.inspectable).
+        Web.inspectable(web)
         web.load(URLRequest(url: url))
         pages[ObjectIdentifier(browser)] = Page(web: web, delegate: delegate)
     }
@@ -257,11 +286,42 @@ final class SidePanelPages: NSObject {
 }
 
 /// A website in the panel: its own pages stay in it, a window it opens goes
-/// to a tab, only on a click, and nothing but the web loads in it.
+/// to a tab, only on a click, and nothing but the web loads in it. It never
+/// gets the camera, the microphone or the screen: it stays beside every tab,
+/// so nobody could tell which page is listening.
 @MainActor
-private final class SitePanelDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
+private final class SitePanelDelegate: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
     weak var browser: Browser?
     init(browser: Browser) { self.browser = browser }
+
+    /// The page that arrived: set when a main-frame navigation commits, and
+    /// as the address moves inside the same site (a link the page handles
+    /// itself, history.pushState). A page only asked for, or on its way,
+    /// leaves it as it was, so the line never names a site not yet there.
+    @Published private(set) var arrived: URL?
+    private var watching: NSKeyValueObservation?
+
+    func watch(_ web: WKWebView) {
+        watching = web.observe(\.url, options: [.new]) { [weak self] web, _ in
+            let now = web.url
+            DispatchQueue.main.async {
+                guard let self, let now, let was = self.arrived, Self.sameSite(now, was) else { return }
+                self.arrived = now
+            }
+        }
+    }
+
+    static func sameSite(_ a: URL, _ b: URL) -> Bool {
+        a.scheme?.lowercased() == b.scheme?.lowercased() && a.host()?.lowercased() == b.host()?.lowercased() && a.port == b.port
+    }
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        arrived = webView.url
+    }
+
+    /// Crashes in a row: the page is made again twice a minute at most, then
+    /// left as it is (the panel's line still closes it or opens it in a tab).
+    private var crashes: [Date] = []
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
@@ -281,14 +341,32 @@ private final class SitePanelDelegate: NSObject, WKNavigationDelegate, WKUIDeleg
         return nil
     }
 
+    /// No camera, no microphone.
     func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin,
                  initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType,
                  decisionHandler: @escaping (WKPermissionDecision) -> Void) {
-        guard let browser else { return decisionHandler(.deny) }
-        browser.askedForCapture(webView, origin: origin, frame: frame, type: type, decisionHandler: decisionHandler)
+        decisionHandler(.deny)
     }
 
-    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) { webView.reload() }
+    /// No screen sharing: answered here, as no (0), so WebKit never shows
+    /// its picker for the panel.
+    @objc(_webView:requestDisplayCapturePermissionForOrigin:initiatedByFrame:withSystemAudio:decisionHandler:)
+    func displayCapture(_ web: WKWebView, origin: WKSecurityOrigin, frame: WKFrameInfo, systemAudio: Bool,
+                        decisionHandler: @escaping (Int) -> Void) {
+        decisionHandler(0)
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        let now = Date()
+        crashes = crashes.filter { now.timeIntervalSince($0) < 60 } + [now]
+        guard crashes.count <= 2 else { return }
+        reloads += 1
+        webView.reload()
+    }
+
+    /// How many times the page was made again, for the bench.
+    private(set) var reloads = 0
+    var gaveUp: Bool { crashes.count > 2 }
 }
 
 /// The panel page's own delegate: a link it opens elsewhere goes to a tab,
@@ -428,7 +506,7 @@ struct SidePanelView: View {
             }
         case .site:
             VStack(spacing: 0) {
-                if let web = SidePanelPages.shared.web(in: browser) { SiteLine(browser: browser, web: web) }
+                if let delegate = SidePanelPages.shared.siteDelegate(in: browser) { SiteLine(browser: browser, delegate: delegate) }
                 Rectangle().fill(Palette.hairline).frame(height: 1)
                 PanelPage(browser: browser)
             }
@@ -444,23 +522,22 @@ private struct SiteLine: View {
     @ObservedObject var browser: Browser
     @StateObject private var seen: Seen
 
-    init(browser: Browser, web: WKWebView) {
+    init(browser: Browser, delegate: SitePanelDelegate) {
         self.browser = browser
-        _seen = StateObject(wrappedValue: Seen(web))
+        _seen = StateObject(wrappedValue: Seen(delegate))
     }
 
-    /// The page's address as it changes.
-    final class Seen: ObservableObject {
+    /// The address of the page that arrived, as it changes.
+    @MainActor final class Seen: ObservableObject {
         @Published var host = ""
-        private var watch: NSKeyValueObservation?
-        init(_ web: WKWebView) {
-            host = Seen.name(web.url)
-            watch = web.observe(\.url, options: [.new]) { [weak self] web, _ in
-                let name = Seen.name(web.url)
-                DispatchQueue.main.async { self?.host = name }
+        private var watch: AnyCancellable?
+        init(_ delegate: SitePanelDelegate) {
+            host = Seen.name(delegate.arrived)
+            watch = delegate.$arrived.receive(on: DispatchQueue.main).sink { [weak self] url in
+                self?.host = Seen.name(url)
             }
         }
-        static func name(_ url: URL?) -> String {
+        nonisolated static func name(_ url: URL?) -> String {
             guard let url, let host = url.host() else { return "" }
             return Address.withoutWWW(host) + (url.scheme?.lowercased() == "http" ? " (not secure)" : "")
         }

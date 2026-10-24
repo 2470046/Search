@@ -2972,7 +2972,10 @@ final class Bench {
             case .page(let id, let url, let tab): content = ["kind": "page", "extension": id, "url": url.absoluteString, "tab": tab.map { $0.uuidString } ?? ""]
             case .site(let url, let space): content = ["kind": "site", "url": url.absoluteString, "space": space.uuidString,
                                                        "store": web.map { $0.configuration.websiteDataStore.isPersistent } ?? false,
-                                                       "sameStore": web.map { $0.configuration.websiteDataStore === Spaces.store(for: browser.spaceID) } ?? false]
+                                                       "sameStore": web.map { $0.configuration.websiteDataStore === Spaces.store(for: browser.spaceID) } ?? false,
+                                                       "inspectable": web.map { if #available(macOS 13.3, *) { return $0.isInspectable } else { return false } } ?? false,
+                                                       "developerExtras": web.flatMap { $0.configuration.preferences.value(forKey: "developerExtrasEnabled") as? Bool } ?? false]
+                .merging(SidePanelPages.shared.siteReport(in: browser)) { a, _ in a }
             case nil: break
             }
             // Where the panel's page and every page sit in the window, from
@@ -3023,6 +3026,12 @@ final class Bench {
                     browser.showSiteInPanel(url)
                 }
                 answer(["shown": browser.sidePanelShown])
+            case "crash":
+                // The panel's website told its process is gone, as WebKit
+                // tells a crash. Test runs only.
+                guard Store.testing else { answer(["error": "sidepanel crash only works on a --test run"]); return }
+                SidePanelPages.shared.siteCrashed(in: browser)
+                answer(SidePanelPages.shared.siteReport(in: browser))
             case "totab":
                 guard Store.testing else { answer(["error": "sidepanel totab only works on a --test run"]); return }
                 browser.sitePanelToTab()

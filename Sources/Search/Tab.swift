@@ -144,6 +144,14 @@ enum Web {
     /// menu, and the Web Inspector the View menu opens (see Inspector.swift).
     /// isInspectable alone only lets Safari's Develop menu reach the page.
     /// The name is outside the public framework, so it is asked first.
+    /// A page the Web Inspector reaches, as every tab's is: Safari's Develop
+    /// menu and Inspect Element both. The side panel's website follows the
+    /// same rule through this.
+    @MainActor static func inspectable(_ web: WKWebView) {
+        if #available(macOS 13.3, *) { web.isInspectable = true }
+        inspector(web.configuration.preferences)
+    }
+
     static func inspector(_ preferences: WKPreferences, on: Bool = true) {
         let set = NSSelectorFromString("_setDeveloperExtrasEnabled:")
         guard preferences.responds(to: set) else { return }
@@ -736,9 +744,8 @@ final class Tab: ObservableObject, Identifiable {
         // prefers-color-scheme goes dark with the frame, and not otherwise.
         // Safari's Develop menu can reach it, and so can the page's own
         // Inspect Element — a configuration handed over by an opener included.
-        if #available(macOS 13.3, *) { web.isInspectable = true }
+        Web.inspectable(web)
         Web.pages.add(web)
-        Web.inspector(web.configuration.preferences)
         NativePiP.allow(web.configuration.preferences)
         web.navigationDelegate = delegate
         web.uiDelegate = uiDelegate(delegate)

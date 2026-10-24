@@ -18,6 +18,24 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import split_view as sv  # noqa: E402
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler  # noqa: E402
+import threading  # noqa: E402
+
+
+class Slow(BaseHTTPRequestHandler):
+    """A page that takes its time, on another host (localhost)."""
+    def do_GET(self):
+        time.sleep(3)
+        body = b"<!doctype html><title>slow</title><p>slow"
+        self.send_response(200); self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+
+    def log_message(self, *a): pass
+
+
+slow = ThreadingHTTPServer(("127.0.0.1", 0), Slow)
+threading.Thread(target=slow.serve_forever, daemon=True).start()
+SLOW = f"http://localhost:{slow.server_port}/slow"
 
 sv.use("bld-s107-sitepanel")
 GAP = 8
@@ -68,6 +86,28 @@ def main():
         t.ok("its page loads there", st["title"] == "panel" and st["page"].endswith("/panel"), st)
         t.ok("signed in as the space's tabs are: the space's own store", st["content"]["store"] is True and st["content"]["sameStore"] is True, st["content"])
         t.ok("no window opens from it without a click", st["opensWindows"] is False, st)
+        t.ok("the Web Inspector reaches it as it reaches a tab", st["content"]["inspectable"] is True and st["content"]["developerExtras"] is True, st["content"])
+        t.ok("its line names the page that arrived", st["content"]["line"] == "127.0.0.1 (not secure)" and st["content"]["arrived"].endswith("/panel"), st["content"])
+
+        # No camera, microphone or screen for the panel's page.
+        peval("window.__cam = 'held'; navigator.mediaDevices.getUserMedia({video: true, audio: true})"
+              ".then(s => { window.__cam = 'granted'; s.getTracks().forEach(k => k.stop()) }, e => window.__cam = e.name); 1")
+        peval("window.__screen = 'held'; navigator.mediaDevices.getDisplayMedia({video: true})"
+              ".then(s => { window.__screen = 'granted'; s.getTracks().forEach(k => k.stop()) }, e => window.__screen = e.name); 1")
+        wait(lambda: peval("window.__cam") != "held" and peval("window.__screen") != "held", within=4)
+        cam, screen = peval("window.__cam"), peval("window.__screen")
+        t.ok(f"camera and microphone are refused in the panel ({cam})", cam not in ("granted", None), cam)
+        t.ok(f"screen sharing is refused in the panel ({screen})", screen not in ("granted", None), screen)
+
+        # The line changes only once the next page arrives.
+        peval(f"location.href = '{SLOW}'; 1"); time.sleep(1.0)
+        sc = panel()["content"]
+        t.ok("a page on its way: the line still names the one there", sc["line"].startswith("127.0.0.1") and sc["arrived"].endswith("/panel"), sc)
+        wait(lambda: panel()["content"]["line"].startswith("localhost"), within=8)
+        sc = panel()["content"]
+        t.ok("once it arrives: the line names it", sc["line"].startswith("localhost") and sc["arrived"] == SLOW, sc)
+        peval(f"location.href = '{sv.BASE}/panel'; 1")
+        wait(lambda: panel()["content"]["line"].startswith("127.0.0.1"))
         w, h = window()
         f = st["frame"]
         t.ok("beside the page on the far side, as wide as a panel", f and f[2] == WIDTH and f[0] + f[2] == w - GAP, (f, w))
@@ -103,6 +143,12 @@ def main():
         panel("totab"); time.sleep(0.8)
         t.ok("into a tab: the panel closes and the page is a tab", not panel()["shown"] and len(urls()) == before + 1
              and any(u.endswith("/kept") for u in urls()), (panel(), urls()))
+        panel("site", url=f"{sv.BASE}/panel")
+        wait(lambda: panel()["title"] == "panel")
+        # A page that keeps crashing is made again twice, then left.
+        for _ in range(3):
+            r = panel("crash"); time.sleep(0.3)
+        t.ok("a crashing page is made again at most twice a minute", r.get("reloads") == 2 and r.get("gaveUp") is True, r)
         sv.quit()
 
         # Another space, one that starts afresh: the site comes again,
