@@ -480,6 +480,13 @@ final class Preferences: ObservableObject {
             NativePiP.allowEverywhere()
         }
     }
+    /// Escape on a page filling the screen leaves only when pressed twice
+    /// within two seconds, as in Arc; the first puts up a reminder (see
+    /// FullScreenEscape). Off unless asked for: one press leaves, as in
+    /// Safari.
+    @Published var escapeTwice: Bool {
+        didSet { store.set(escapeTwice, forKey: "fullscreen.escapeTwice") }
+    }
     /// A newer build is fetched, checked and put in place on its own, as it
     /// always was. Off, Search still looks every hour and says so, and waits
     /// for Install in Settings (see Updater.installsOnItsOwn).
@@ -709,6 +716,7 @@ final class Preferences: ObservableObject {
         sitesInPanel = store.bool(forKey: "panel.sites")
         panelSite = store.string(forKey: "panel.site") ?? ""
         floatStyle = store.string(forKey: "float.style").flatMap(FloatStyle.init(rawValue:)) ?? .search
+        escapeTwice = store.bool(forKey: "fullscreen.escapeTwice")
         waitsForPlay = store.bool(forKey: Preferences.waitsKey)
         translatesPages = store.bool(forKey: PageTranslator.key)
         translateAlways = Set(store.stringArray(forKey: PageTranslator.alwaysKey) ?? [])
