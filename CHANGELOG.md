@@ -11,6 +11,14 @@ in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Held back
+
+Not in this version, kept on main for a later one:
+
+- AI on pages, off unless you turn it on in Settings › AI: Summarize Page and Ask About This Page… in the View menu, answered where you choose — a model downloaded to this Mac (Apple Silicon: Qwen3 1.7B, 1.1 GB, checked before every use and run by a small program of Search's own that can't reach the network or your files), Ollama or LM Studio on this Mac, your own key for Anthropic, OpenAI, Google Gemini or OpenRouter, or signing in with your OpenRouter account. The answer comes in a panel beside the page, in plain text, marked as possibly wrong and with where it ran; follow-up questions stay in the panel, and nothing is kept once it closes. Only the page's visible text goes, never a password, a form or another tab; the page's words are given to the model as something to read, not orders, and any web address, email or phone number in the answer that isn't on the page is pointed out. Keys stay in this Mac's keychain and go only to their provider; a provider off this Mac is shown what it will be sent before the first request, and a private tab uses only what runs on this Mac.
+
+## 1.0.6 — 24 October 2026
+
 ### Added
 
 - Suggestions from your search engine as you type, under the address field's own rows, each with a magnifying glass; choosing one searches it. Off unless you turn it on in Settings › General › Suggestions from your search engine, since what you type is then sent to your engine as you type it. Google, DuckDuckGo, Bing, Ecosia, Startpage, Kagi, Brave Search and Qwant; a custom engine shows none. Never from a private tab, and never for an address, a file path, an email, something long or something that looks like a password or key. No cookies are sent with them
@@ -117,11 +125,9 @@ in [ROADMAP.md](ROADMAP.md).
 - A tab dragged along the row across the top moves itself again, not the whole window. macOS starts a title bar's drag before the app sees the press, so making the window unmovable at the press came too late with a real mouse; it is now unmovable while the pointer is over the row, and movable everywhere else for Move & Resize and tiling. Thanks [@etienne-asc](https://github.com/etienne-asc) ([#668](https://github.com/driceroland/Search/pull/668))
 - With Split View on, the saved accounts under a sign-in field show again. The list came up, but under the page, so nothing appeared and a click there went to the page; it now hangs over the page, as the find bar does, and a click off it still reaches the page. Thanks [@S-Efekan](https://github.com/S-Efekan) ([#667](https://github.com/driceroland/Search/pull/667))
 
-### Held back
+### Known issue
 
-Not in this version, kept on main for a later one:
-
-- AI on pages, off unless you turn it on in Settings › AI: Summarize Page and Ask About This Page… in the View menu, answered where you choose — a model downloaded to this Mac (Apple Silicon: Qwen3 1.7B, 1.1 GB, checked before every use and run by a small program of Search's own that can't reach the network or your files), Ollama or LM Studio on this Mac, your own key for Anthropic, OpenAI, Google Gemini or OpenRouter, or signing in with your OpenRouter account. The answer comes in a panel beside the page, in plain text, marked as possibly wrong and with where it ran; follow-up questions stay in the panel, and nothing is kept once it closes. Only the page's visible text goes, never a password, a form or another tab; the page's words are given to the model as something to read, not orders, and any web address, email or phone number in the answer that isn't on the page is pointed out. Keys stay in this Mac's keychain and go only to their provider; a provider off this Mac is shown what it will be sent before the first request, and a private tab uses only what runs on this Mac.
+- Claude in Chrome's side panel may ask you to sign in again: WebKit doesn't send claude.ai's session cookies to an extension's own pages. WebKit has fixed it upstream; it comes with a macOS update.
 
 ## 1.0.5 — 14 October 2026
 
