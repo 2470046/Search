@@ -1481,7 +1481,7 @@ final class BookmarkMenu: NSObject, NSMenuDelegate {
     private var menu: NSMenu? { NSApp.mainMenu?.items.first(where: { $0.title == "Bookmarks" })?.submenu }
 
     /// The window in front's: its profile's bookmarks (see Profiles.swift).
-    private var shown: Browser? { Browsers.front.flatMap { $0.extensionPopup == nil ? $0 : nil } ?? browser }
+    private var shown: Browser? { Browsers.front.flatMap { !$0.isPopup ? $0 : nil } ?? browser }
 
     /// Looks, while the menu is open, after each turn of the run loop.
     private var looking: CFRunLoopObserver?

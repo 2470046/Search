@@ -1848,12 +1848,15 @@ final class ExtensionWindow: NSObject, WKWebExtensionWindow {
         browser.flatMap { owner.activeAdapter(of: $0, for: context) }
     }
     func windowType(for context: WKWebExtensionContext) -> WKWebExtension.WindowType {
-        browser?.extensionPopup != nil ? .popup : .normal
+        browser?.isPopup == true ? .popup : .normal
     }
     /// A window here holds private tabs and others, and WebKit would take
     /// this answer for all of them. The shim marks the private ones instead
-    /// (`privacy` in ExtensionShims), until WebKit can be told per tab.
-    func isPrivate(for context: WKWebExtensionContext) -> Bool { false }
+    /// (`privacy` in ExtensionShims), until WebKit can be told per tab. A
+    /// website's pop-up window holds its one page, so it can say.
+    func isPrivate(for context: WKWebExtensionContext) -> Bool {
+        browser?.websitePopup == true && browser?.active?.shy == true
+    }
 
     func windowState(for context: WKWebExtensionContext) -> WKWebExtension.WindowState {
         guard let window = nsWindow else { return .normal }

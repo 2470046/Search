@@ -75,7 +75,7 @@ extension Browser {
     @available(macOS 15.4, *)
     @discardableResult
     func showSidePanel(_ context: WKWebExtensionContext, url: URL, for tab: Tab.ID? = nil) -> SidePanelAnswer {
-        guard extensionPopup == nil else { return .noPanel }
+        guard !isPopup else { return .noPanel }
         // An extension not let into private tabs is given nothing of one
         // (Extensions' `hidden`): no address, no title, no view to run a
         // script in. A panel of its own beside that page would be a panel
@@ -116,7 +116,7 @@ extension Browser {
     /// again closes it, as a second press on an extension's button does.
     @discardableResult
     func showSiteInPanel(_ url: URL) -> Bool {
-        guard prefs.sitesInPanel, PanelSites.allowed(url), extensionPopup == nil else { return false }
+        guard prefs.sitesInPanel, PanelSites.allowed(url), !isPopup else { return false }
         if sidePanelShown, case .site = sidePanel, SidePanelPages.shared.siteArrived(in: self)?.host() == url.host() {
             closeSidePanel()
             return true

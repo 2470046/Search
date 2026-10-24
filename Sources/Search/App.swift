@@ -671,13 +671,13 @@ struct ContentView: View {
             announcement
             if let ask = browser.asking {
                 Group {
-                    if ask.screen { screenAsking(ask) }
-                    else { captureAsking(ask) }
+                    if ask.screen { ScreenQuestion(browser: browser, ask: ask) }
+                    else { CaptureQuestion(browser: browser, ask: ask) }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             if let offer = browser.offering {
-                keepAsking(offer)
+                PasswordOffer(browser: browser, offer: offer)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             StoreOffer(browser: browser)
@@ -919,139 +919,6 @@ struct ContentView: View {
         }
     }
 
-    /// A page asking to see or hear you. Named by the site, in its own words,
-    /// with the answer remembered so it is asked once and not every call.
-    private func captureAsking(_ ask: Browser.CaptureAsk) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: ask.wants == "location" ? "location" : ask.wants == "microphone" ? "mic" : ask.wants == "notifications" ? "bell" : "video")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Palette.muted)
-            Text(ask.wants == "location" ? "\(ask.host) wants to know your location"
-                 : ask.wants == "notifications" ? "\(ask.host) wants to send you notifications"
-                 : "\(ask.host) wants to use your \(ask.wants)")
-                .font(.system(size: 12.5))
-                .foregroundStyle(Palette.ink)
-            Button { ask.once ? browser.allowCaptureOnce() : browser.allowCapture() } label: {
-                Text(ask.once ? "Allow once" : "Allow")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Palette.ground)
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 5)
-                    .background(Palette.ink, in: Capsule())
-            }
-            .buttonStyle(.plain)
-            if ask.once, ask.keeps {
-                Button { browser.allowCapture() } label: {
-                    Text("Always allow")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Palette.ink)
-                }
-                .buttonStyle(.plain)
-            }
-            Button { browser.denyCapture() } label: {
-                Text("Don't allow")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Palette.muted)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 10)
-        .padding(.vertical, 9)
-        .background(Palette.ground, in: Capsule())
-        .overlay(Capsule().strokeBorder(Palette.hairline, lineWidth: 1))
-        .shadow(color: .black.opacity(0.12), radius: 20, y: 6)
-    }
-
-    private func screenAsking(_ ask: Browser.CaptureAsk) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "macwindow.on.rectangle")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Palette.muted)
-                    .padding(.top, 2)
-                Text(ask.sound ? "\(ask.host) wants to share your screen and your Mac's sound"
-                               : "\(ask.host) wants to share your screen")
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(Palette.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            HStack(spacing: 12) {
-                Button { browser.denyShare() } label: {
-                    Text("Don't allow")
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 7)
-                        .contentShape(Rectangle())
-                }
-                Spacer(minLength: 8)
-                // A window gives away less than a whole screen: it is the
-                // one drawn as the answer.
-                Button { browser.shareScreen() } label: {
-                    Text("Share a Screen")
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 7)
-                        .contentShape(Rectangle())
-                }
-                Button { browser.shareWindow() } label: {
-                    Text("Share a Window")
-                        .foregroundStyle(Palette.ground)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 7)
-                        .background(Palette.ink, in: Capsule())
-                }
-            }
-            .font(.system(size: 12))
-            .foregroundStyle(Palette.ink)
-            .buttonStyle(.plain)
-        }
-        .frame(maxWidth: 400, alignment: .leading)
-        .padding(18)
-        .background(Palette.ground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Palette.hairline, lineWidth: 1))
-        .shadow(color: .black.opacity(0.12), radius: 20, y: 6)
-        .padding(.horizontal, 16)
-    }
-
-    /// Offered once, answered once. The password is never shown back to you —
-    /// there is nothing to be learned from reading your own password.
-    private func keepAsking(_ offer: Browser.Offer) -> some View {
-        let login = offer.login
-        return HStack(spacing: 12) {
-            Text(offer.changed
-                 ? "Update the password for \(login.user) on \(login.host)?"
-                 : (login.user.isEmpty
-                    ? "Save this password for \(login.host)?"
-                    : "Save the password for \(login.user) on \(login.host)?"))
-                .font(.system(size: 12.5))
-                .foregroundStyle(Palette.ink)
-                .lineLimit(1)
-            Button(offer.changed ? "Update" : "Save") { browser.keepOffer() }
-                .buttonStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundStyle(Palette.ground)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 5)
-                .background(Palette.ink, in: Capsule())
-            Button("Not now") { browser.dropOffer() }
-                .buttonStyle(.plain)
-                .font(.system(size: 12))
-                .foregroundStyle(Palette.muted)
-            if !offer.changed {
-                Button("Never here") { browser.neverOffer() }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 12))
-                    .foregroundStyle(Palette.muted)
-            }
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 12)
-        .padding(.vertical, 9)
-        .background(Palette.ground, in: Capsule())
-        .overlay(Capsule().strokeBorder(Palette.hairline, lineWidth: 1))
-        .shadow(color: .black.opacity(0.12), radius: 20, y: 6)
-    }
-
-
     /// A dark pill, for the one mode this browser has. It stays up for as long
     /// as the mode does, which is how you know you are still in it.
     private func hint(_ text: String) -> some View {
@@ -1285,7 +1152,10 @@ struct ContentView: View {
 
     /// Whether a key is this window's to act on.
     private func mine(_ event: NSEvent) -> Bool {
-        if let window = event.window, Browsers.browser(for: window) != nil { return window === self.window }
+        if let window = event.window, let owner = Browsers.browser(for: window) {
+            // Popup hosts have no ContentView monitor of their own.
+            return owner.isPopup ? Browsers.acting === browser : window === self.window
+        }
         return Browsers.acting === browser
     }
 
@@ -1370,10 +1240,19 @@ struct ContentView: View {
         if event.window?.sheetParent != nil || NSApp.modalWindow != nil { return false }
         // A small window's keys are its own (see Little.swift).
         if let little = LittleWindow.owning(event.window) { return little.take(event) }
-        // An extension's popup window: ⌘W closes it, not a tab of the
-        // window menus act on; every other key is its page's.
-        if let popup = Browsers.browser(for: event.window), popup.extensionPopup != nil {
+        // A popup window: ⌘W closes it, not a tab of the
+        // window menus act on. New tabs return to its browser; Escape
+        // dismisses its permission question.
+        if let popup = Browsers.browser(for: event.window), popup.isPopup {
+            if popup.websitePopup, let combo = KeyCombo(event: event) {
+                if combo == ShortcutStore.shared.key(for: "file.newTab") { popup.newTab(); return true }
+                if combo == ShortcutStore.shared.key(for: "file.newPrivateTab") { popup.newShyTab(); return true }
+            }
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            if event.keyCode == 53, flags.isEmpty, popup.asking != nil {
+                popup.cancelCapture()  // the screen's question too
+                return true
+            }
             guard event.shortcutCharacters == "w", flags == .command else { return false }
             popup.window?.performClose(nil)
             return true

@@ -1310,7 +1310,7 @@ struct TabMenu: View {
         }
         if tab.pin == nil, !tab.bench {
             // Another window, or a new one (see Browser.moveToWindow).
-            let others = Browsers.all.filter { $0 !== browser && $0.isOpen && $0.extensionPopup == nil && $0.profileID == browser.profileID }
+            let others = Browsers.all.filter { $0 !== browser && $0.isOpen && !$0.isPopup && $0.profileID == browser.profileID }
             if others.isEmpty {
                 Button("Move to New Window") { browser.moveToWindow(tab, nil) }
                     .disabled(browser.tabs.count < 2)
