@@ -869,6 +869,15 @@ struct Carried: ViewModifier {
     var outside: (() -> Bool)? = nil
     var browser: Browser? = nil
     var tab: Tab? = nil
+    /// Carried over another block that would take it — the pins, for a
+    /// tab; the tabs, for a pinned row — at this point in the row's space:
+    /// true while that block shows where it would land, and the row then
+    /// holds its place rather than moving along its own.
+    var cross: ((CGPoint) -> Bool)? = nil
+    /// Let go (nil: the drag was called off): true when that block took it.
+    var land: ((CGPoint?) -> Bool)? = nil
+    /// Over that block: faint, so the place it opened shows through.
+    var faded = false
     let move: (Int) -> Void
 
     @State private var held = false
@@ -889,6 +898,7 @@ struct Carried: ViewModifier {
             .transaction { if held { $0.animation = nil } }
             .zIndex(held ? 1 : 0)
             .shadow(color: .black.opacity(held ? 0.14 : 0), radius: 12, y: 4)
+            .opacity(held && faded ? 0.4 : 1)
             .gesture(
                 DragGesture(minimumDistance: 5, coordinateSpace: .named(space))
                     .onChanged { value in
@@ -897,9 +907,13 @@ struct Carried: ViewModifier {
                             from = index
                         }
                         travel = vertical ? value.translation.height : value.translation.width
+                        // Asked every move, so the block it left lets go
+                        // of it as soon as it is elsewhere.
+                        let crossed = cross?(value.location) == true
                         if let browser, let tab, browser.prefs.splitView,
                            TabDrag.shared.update(browser: browser, tab: tab,
                                                  translation: value.translation) { return }
+                        if crossed { return }
                         let target = min(max(0, from + Int((travel / step).rounded())), count - 1)
                         if target != index {
                             withAnimation(Motion.settle) { move(target) }
@@ -909,22 +923,28 @@ struct Carried: ViewModifier {
                         if let browser, let tab, browser.prefs.splitView {
                             let finished = TabDrag.shared.finish(browser: browser, tab: tab)
                             let source = finished.source
-                            switch finished.drop {
-                            case .stage(let target, let onLeft):
-                                browser.pair(source, with: target, onLeft: onLeft)
-                            case .strip(let target):
-                                browser.dropTabIntoStrip(source, before: target)
-                                if let onDropTab { onDropTab(source, value.location) }
-                                else if source.id == tab.id { onDrop?(value.location) }
-                            case .outside:
-                                if !browser.dragOut(source, at: finished.point) {
+                            // Let go over the pins, or out of them: theirs,
+                            // before anything else here.
+                            let cancelled: Bool
+                            if case .cancelled = finished.drop { cancelled = true } else { cancelled = false }
+                            if land?(cancelled ? nil : value.location) != true {
+                                switch finished.drop {
+                                case .stage(let target, let onLeft):
+                                    browser.pair(source, with: target, onLeft: onLeft)
+                                case .strip(let target):
+                                    browser.dropTabIntoStrip(source, before: target)
                                     if let onDropTab { onDropTab(source, value.location) }
                                     else if source.id == tab.id { onDrop?(value.location) }
+                                case .outside:
+                                    if !browser.dragOut(source, at: finished.point) {
+                                        if let onDropTab { onDropTab(source, value.location) }
+                                        else if source.id == tab.id { onDrop?(value.location) }
+                                    }
+                                case .cancelled:
+                                    move(from)
                                 }
-                            case .cancelled:
-                                move(from)
                             }
-                        } else if outside?() != true {
+                        } else if land?(value.location) != true, outside?() != true {
                             if let onDropTab, let tab { onDropTab(tab, value.location) }
                             else { onDrop?(value.location) }
                         }
@@ -936,6 +956,7 @@ struct Carried: ViewModifier {
             )
             .onReceive(TabDrag.shared.$cancelledID) { id in
                 guard id == tab?.id, held else { return }
+                _ = land?(nil)
                 move(from)
                 held = false
                 travel = 0

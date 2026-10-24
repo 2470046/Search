@@ -385,7 +385,18 @@ final class Bench {
             guard let tab = find(request, in: browser) else { answer(missing(request)); return }
             // "listed": pinned as a row, or an existing pin made a row
             // (true) or a square (false).
-            if request["off"] as? Bool == true { browser.unpin(tab) }
+            // "at": let go there, as the column's drag lets go (PinDrop):
+            // among the squares (or the rows, with "listed"), or with "off"
+            // among the tabs in no group — or into "group".
+            var taken: Bool?
+            if let at = request["at"] as? Int {
+                if request["off"] as? Bool == true {
+                    taken = browser.unpinDropped(tab, at: at, group: (request["group"] as? String).flatMap(UUID.init))
+                } else {
+                    taken = browser.pinDropped(tab, listed: request["listed"] as? Bool ?? false, at: at)
+                }
+            }
+            else if request["off"] as? Bool == true { browser.unpin(tab) }
             else if request["home"] as? Bool == true { browser.goHome(tab) }
             // "everywhere": Keep in Every Space (true) or Only in This Space
             // (false), as the pin's menu does.
@@ -395,7 +406,8 @@ final class Bench {
             else if let listed = request["listed"] as? Bool, tab.pin != nil { browser.setListed(tab, listed) }
             else { browser.pin(tab, listed: request["listed"] as? Bool ?? false) }
             answer(["pin": tab.pin ?? "", "listed": tab.listed, "everywhere": tab.everywhere, "pinned": browser.pinnedCount, "home": tab.home?.absoluteString ?? "",
-                    "address": tab.address?.absoluteString ?? "", "editingLetter": browser.editingPin == tab.id])
+                    "address": tab.address?.absoluteString ?? "", "editingLetter": browser.editingPin == tab.id,
+                    "taken": taken.map { $0 as Any } ?? NSNull()])
 
         case "select":
             // Picking a tab takes the window over, which the bench never does
@@ -3404,6 +3416,9 @@ final class Bench {
                     // you last looked, for ⌃Tab: letting go moves only the first.
                     "idle": Date().timeIntervalSince(tab.leftSince),
                     "looked": Date().timeIntervalSince(tab.touched),
+                    // Which web view holds its page, while it has one: the
+                    // same after a pin or an unpin, as nothing was loaded again.
+                    "web": tab.built.map { String(UInt(bitPattern: ObjectIdentifier($0).hashValue), radix: 16) } ?? "",
                 ] as [String: Any]
             },
             "splits": browser.splits.map { pair in
