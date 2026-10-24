@@ -512,6 +512,10 @@ struct SettingsPanel: View {
                 Segmented(options: Glyph.allCases.map { ($0, $0.title) }, selection: $prefs.glyph)
             }
             Rule()
+            Line("Tabs give when pressed", "A tab sinks a little under the pointer while you press it and springs back when you let go, as in Arc") {
+                Switch(on: $prefs.tabsGive)
+            }
+            Rule()
             Line("Show the bookmarks bar", "Your bookmarks in a row above the page, folders opening as menus. It folds away with the tabs") {
                 Switch(on: $prefs.bookmarksBar)
             }

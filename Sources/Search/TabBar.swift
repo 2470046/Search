@@ -580,6 +580,7 @@ private struct TabPill: View {
 
     @State private var hovering = false
     @State private var shake: CGFloat = 0
+    @State private var pressed = false
 
     private var editing: Bool { browser.editingTab == tab.id }
     private var pinned: Bool { tab.pin != nil && !editing }
@@ -643,7 +644,9 @@ private struct TabPill: View {
             }
         }
         .modifier(Shake(travel: shake))
+        .modifier(Give(pressed: pressed && prefs.tabsGive))
         .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .modifier(Pressing(down: $pressed, enabled: prefs.tabsGive))
         // Never both at once.
         //
         // A view carrying a single tap *and* a double tap has to wait out the
@@ -1338,6 +1341,9 @@ struct TabPress: ViewModifier {
     let enabled: Bool
     let active: Bool
     @Binding var selected: Bool
+    /// Told when the button goes down on the tab and comes back up, whatever
+    /// the press goes on to do, for the tab to give under it (see Give).
+    var pressing: Binding<Bool>? = nil
     let act: () -> Void
 
     /// How far the hand may go before the press gives way to the row's
@@ -1351,6 +1357,7 @@ struct TabPress: ViewModifier {
 
     func body(content: Content) -> some View {
         content.onLongPressGesture(minimumDuration: .infinity, maximumDistance: TabPress.travel, pressing: { down in
+            pressing?.wrappedValue = down
             if !down {
                 // Given way to a drag, the button still down: what the press
                 // did stands until the release, so the release can't take
@@ -1377,6 +1384,40 @@ struct TabPress: ViewModifier {
             monitor = nil
             DispatchQueue.main.async(execute: act)
             return event
+        }
+    }
+}
+
+/// Only whether the button is down on the view, by TabPress's means, for a
+/// tab whose click answers on release: the strip's pills.
+/// Only while tabs give (Settings › Tabs): otherwise the pill carries no
+/// gesture more than it did.
+struct Pressing: ViewModifier {
+    @Binding var down: Bool
+    var enabled = true
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if enabled {
+            content.onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity,
+                                       pressing: { down = $0 }, perform: {})
+        } else {
+            content
+        }
+    }
+}
+
+/// A tab gives a little under the button and springs back when it is let
+/// go, the life Arc's tabs have when clicked. Going down is quick, so the
+/// click is answered at once; coming back is the settle spring. Only the
+/// scale is animated, so the selection the press makes isn't slowed with
+/// it. Nothing moves with Reduce Motion on.
+struct Give: ViewModifier {
+    let pressed: Bool
+
+    func body(content: Content) -> some View {
+        content.animation(pressed ? Motion.quick : Motion.settle) {
+            $0.scaleEffect(pressed && !Motion.reduced ? Motion.give : 1)
         }
     }
 }

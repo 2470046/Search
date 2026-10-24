@@ -169,6 +169,11 @@ final class Preferences: ObservableObject {
     @Published var keepsSitesAwake: Bool {
         didSet { store.set(keepsSitesAwake, forKey: "tabs.keepAwake") }
     }
+    /// A tab gives a little under the pointer while it is pressed, as Arc's
+    /// do (see Give). Off unless turned on.
+    @Published var tabsGive: Bool {
+        didSet { store.set(tabsGive, forKey: "tabs.give") }
+    }
     @Published var awakeSites: Set<String> {
         didSet { store.set(Array(awakeSites).sorted(), forKey: "tabs.awakeSites") }
     }
@@ -594,6 +599,7 @@ final class Preferences: ObservableObject {
         keywords = store.data(forKey: "search.keywords")
             .flatMap { try? JSONDecoder().decode([Keyword].self, from: $0) } ?? []
         keepsSitesAwake = store.bool(forKey: "tabs.keepAwake")
+        tabsGive = store.bool(forKey: "tabs.give")
         awakeSites = Set(store.stringArray(forKey: "tabs.awakeSites") ?? [])
         popupSites = Set(store.stringArray(forKey: "privacy.popupSites") ?? [])
         sleepsTabs = store.object(forKey: "tabs.sleep") as? Bool ?? true
