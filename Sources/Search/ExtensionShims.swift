@@ -41,7 +41,7 @@ enum ExtensionShims {
     nonisolated static let stamp = ".search-shim"
     /// Raised when `prepare` changes what it does to a package, so that
     /// extensions prepared before are prepared again.
-    nonisolated private static let preparation = "3"
+    nonisolated private static let preparation = "4"
     nonisolated static let version: String = {
         SHA256.hash(data: Data((script + PasskeyRelay.page + preparation).utf8)).prefix(8).map { String(format: "%02x", $0) }.joined() + (Store.testing ? "-test" : "")
     }()
@@ -140,11 +140,32 @@ enum ExtensionShims {
         let data = try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .withoutEscapingSlashes])
         try data.write(to: manifestURL, options: .atomic)
 
-        // Every page it ships — popup, options, background page, side panel.
-        let walker = files.enumerator(at: folder, includingPropertiesForKeys: [.isSymbolicLinkKey])
+        // Every page it ships — popup, options, background page, side panel —
+        // and scripts a content script may insert into a website. WebKit
+        // decodes those in the site's encoding unless the resource says
+        // otherwise: Backpack's Unicode regexes break on a windows-1252
+        // page. A UTF-8 signature keeps the script's text independent of
+        // the page without changing the page's own encoding or scripts.
+        let signature = Data([0xEF, 0xBB, 0xBF])
+        let walker = files.enumerator(at: folder, includingPropertiesForKeys: [.isSymbolicLinkKey, .isRegularFileKey])
         while let url = walker?.nextObject() as? URL {
-            guard (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) != true,
-                  ["html", "htm"].contains(url.pathExtension.lowercased()),
+            guard (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
+                  inside(String(url.path.dropFirst(folder.path.count)), of: folder) != nil
+            else { continue }
+            if ["js", "mjs"].contains(url.pathExtension.lowercased()) {
+                guard let bytes = try? Data(contentsOf: url),
+                      !bytes.starts(with: signature), bytes.contains(where: { $0 >= 0x80 }),
+                      String(data: bytes, encoding: .utf8) != nil,
+                      // A hashbang must stay at the very first character.
+                      !bytes.starts(with: [0x23, 0x21])
+                else { continue }
+                // As every other rewrite here: one that fails leaves the
+                // file as it was, and the stamp is still written (see the
+                // defer above), so it isn't tried again at every launch.
+                try? (signature + bytes).write(to: url, options: .atomic)
+                continue
+            }
+            guard ["html", "htm"].contains(url.pathExtension.lowercased()),
                   var html = try? String(contentsOf: url, encoding: .utf8)
             else { continue }
             if let chained = chainModules(html, page: url, folder: folder) {

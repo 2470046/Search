@@ -39,6 +39,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Fixed
 
+- An extension's scripts keep their Unicode when it puts them into a page written in an older encoding. Backpack's wallet could fail with an invalid regular expression on windows-1252 pages, its UTF-8 script read in the page's encoding. Installed extensions are prepared again once, at the first launch. Thanks [@K-NRS](https://github.com/K-NRS) ([#521](https://github.com/driceroland/Search/pull/521))
 - The ⌃Tab switcher's cards and thumbnails have the same smooth corners as the rest of Search, instead of plain round ones. Thanks [@oddharsh](https://github.com/oddharsh) ([#686](https://github.com/driceroland/Search/pull/686))
 - With the tabs down the side and fewer of them than the column holds, the pointer crossing a row no longer builds every row again, twice over: about 40 rows a crossing became 2, and the main thread's time for one went from about 26 ms to 4. Thanks [@oddharsh](https://github.com/oddharsh) ([#694](https://github.com/driceroland/Search/pull/694))
 - A tab dragged onto a tab group goes in where you let it go, among the group's tabs, in the column and across the top, and a tab dragged within its group moves to its new place. It could miss the group, and when it went in it always went to the end. Let go on the group's name, it goes at the end and the group opens. Thanks [@mvanhorn](https://github.com/mvanhorn) for the fix and [@dalxds](https://github.com/dalxds) for reporting ([#693](https://github.com/driceroland/Search/pull/693), [#673](https://github.com/driceroland/Search/issues/673))
