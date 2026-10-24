@@ -5409,6 +5409,13 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
             return
         }
 
+        // An extension's rule sending a site to one of its pages (Norma's
+        // block page): that page needs another view too.
+        if #available(macOS 15.4, *), routeRuleRedirect(action, from: webView) {
+            decisionHandler(.cancel)
+            return
+        }
+
         // A website returning to a public extension page needs another view.
         if #available(macOS 15.4, *), routeExtensionReturn(action, from: webView) {
             decisionHandler(.cancel)
@@ -5517,12 +5524,30 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         return handOverExtensionReturn(target, source: source, from: webView, tab: tab)
     }
 
+    /// WebKit marks the navigation it starts for a content rule's redirect
+    /// (`_isContentExtensionRedirect`); a page can't. What a page could reach
+    /// is still all it gets: the file must be one the extension exposes to
+    /// the site the tab was going to, as Chrome requires of a redirect to an
+    /// extension's file.
     @available(macOS 15.4, *)
-    private func handOverExtensionReturn(_ target: URL, source: URL, from webView: WKWebView, tab: Tab) -> Bool {
+    private func routeRuleRedirect(_ action: WKNavigationAction, from webView: WKWebView) -> Bool {
+        guard action.targetFrame?.isMainFrame == true,
+              action.responds(to: NSSelectorFromString("_isContentExtensionRedirect")),
+              (action.value(forKey: "_isContentExtensionRedirect") as? Bool) == true,
+              let tab = tab(for: webView), let requested = action.request.url
+        else { return false }
+        let source = tab.extensionReturn.ruleSource(for: action)
+        let target = Extensions.current(ExtensionRedirectPolicy.ruleTarget(requested))
+        guard target.scheme == Extensions.scheme, let source else { return false }
+        return handOverExtensionReturn(target, source: source, from: webView, tab: tab, fromRule: true)
+    }
+
+    @available(macOS 15.4, *)
+    private func handOverExtensionReturn(_ target: URL, source: URL, from webView: WKWebView, tab: Tab, fromRule: Bool = false) -> Bool {
         guard !tab.shy,
               let context = Extensions.shared.controller.extensionContext(for: target),
               context.isLoaded, context.webViewConfiguration != nil,
-              ExtensionRedirectPolicy.allows(target: target, sourceOrigin: source, manifest: context.webExtension.manifest)
+              ExtensionRedirectPolicy.allows(target: target, sourceOrigin: source, manifest: context.webExtension.manifest, fromRule: fromRule)
         else { return false }
         let revision = tab.extensionReturn.revision
         DispatchQueue.main.async { [weak self, weak tab, weak webView] in
