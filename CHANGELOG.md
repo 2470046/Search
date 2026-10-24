@@ -36,6 +36,7 @@ in [ROADMAP.md](ROADMAP.md).
 - New small windows open a step down and to the right of the newest one on screen instead of exactly on top of it. Five links from Mail were five windows that looked like one, the others hidden under it. Thanks [@oddharsh](https://github.com/oddharsh) ([#493](https://github.com/driceroland/Search/pull/493))
 - A video call goes on when you go to another tab. On a Google Meet call, the others saw your camera frozen until you came back to its tab, since a tab behind was taken out of the window and its page slowed as one nobody can see; a tab using the camera, the microphone or the screen now stays in the window, unseen, for as long as the call lasts, as Safari and Chrome keep it going. Any other tab behind is slowed and put to sleep as before
 - Dragging a tab or a pin in the column moves it under the hand again. In 1.0.6, since a tab opens as the button goes down ([#625](https://github.com/driceroland/Search/pull/625)), it only jumped into place on letting go, and a pin held still a moment before letting go wasn't moved at all
+- One letter in the address field finishes the site you go to most that starts with it, as in Safari and Chrome: "x" and Return go to x.com. Only the top row, and only a site you have been to; a page inside a site, or a letter inside a name, still waits for a second letter. Thanks [@murahovsky](https://github.com/murahovsky) for reporting ([#696](https://github.com/driceroland/Search/issues/696))
 
 ### Held back
 
