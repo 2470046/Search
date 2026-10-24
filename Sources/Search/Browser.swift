@@ -2743,6 +2743,8 @@ final class Browser: NSObject, ObservableObject {
     }
 
     func startSplit() {
+        // Two tabs picked in the column: those two side by side.
+        if pickedPair != nil { return pairPickedTabs() }
         guard prefs.splitView, let shown = active, !shown.bench else { return }
         if let pair = activeSplit {
             if let right = tabs.first(where: { $0.id == pair.right }) { focusPane(right) }
@@ -2825,6 +2827,49 @@ final class Browser: NSObject, ObservableObject {
         guard split(for: tab)?.contains(current.id) != true else { return focusPane(tab) }
         guard canSplit(tab, with: current) else { return }
         pair(tab, with: current, onLeft: false)
+    }
+
+    /// The tabs picked in the column (⌘- or ⇧-click) that are shown, in the
+    /// column's order.
+    private var pickedTabs: [Tab] {
+        selectableTabs.filter { selectedTabIDs.contains($0.id) }
+    }
+
+    /// Exactly two tabs picked, and already the two pages of one pair.
+    var pickedTabsArePaired: Bool {
+        let picked = pickedTabs
+        return picked.count == 2 && split(for: picked[0])?.contains(picked[1].id) == true
+    }
+
+    /// Exactly two tabs picked that can go side by side: what Open 2 Tabs in
+    /// Split View and ⌥⌘N pair. More than two isn't a pair — Split View holds
+    /// two pages — so the menu's item is off then and ⌥⌘N does what it does
+    /// without a selection.
+    var pickedPair: (left: Tab, right: Tab)? {
+        let picked = pickedTabs
+        guard prefs.splitView, picked.count == 2, !pickedTabsArePaired,
+              canSplit(picked[0], with: picked[1]) else { return nil }
+        return (picked[0], picked[1])
+    }
+
+    /// The two picked tabs side by side, the first in the column on the
+    /// left. Both keep their pages (nothing loads again); either one in
+    /// another pair leaves it first, as a drag onto a page's edge does; a
+    /// pin stays a pin and its page goes in as a tab (see splittable). The
+    /// pair lands where the left one was — where the right one was when the
+    /// left is a pin — and the tab asked from has the keys. The selection
+    /// is done with.
+    func pairPickedTabs(focus asked: Tab? = nil) {
+        guard let (left, right) = pickedPair else { return }
+        clearTabSelection()
+        if left.pin != nil && right.pin == nil {
+            pair(left, with: right, onLeft: true)
+        } else {
+            pair(right, with: left, onLeft: false)
+        }
+        if let asked, let made = split(for: asked), activeSplit?.id == made.id {
+            focusPane(asked)
+        }
     }
 
     /// The divider's menu › Swap Pages.
