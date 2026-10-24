@@ -3713,12 +3713,13 @@ enum ExtensionShims {
         return visible.indices.contains(index) ? visible[index] : nil
     }
 
-    private static var favIcons: [String: String] = [:]
+    /// Each icon drawn once; the image is held so its identity stays its own.
+    private static var favIcons: [ObjectIdentifier: (icon: NSImage, url: String)] = [:]
     static func forgetIcons() { favIcons.removeAll() }
 
     private static func favIconURL(_ tab: Tab) -> String? {
-        guard let host = tab.address.flatMap(Favicons.site), let icon = tab.icon ?? Favicons.shared.cached(host) else { return nil }
-        if let known = favIcons[host] { return known }
+        guard let icon = tab.icon ?? Favicons.shared.cached(for: tab.address, shy: tab.shy) else { return nil }
+        if let known = favIcons[ObjectIdentifier(icon)] { return known.url }
         let side = 32
         guard let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8,
                                             samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
@@ -3730,7 +3731,7 @@ enum ExtensionShims {
         guard let png = bitmap.representation(using: .png, properties: [:]) else { return nil }
         let url = "data:image/png;base64," + png.base64EncodedString()
         if favIcons.count > 500 { favIcons.removeAll() }
-        favIcons[host] = url
+        favIcons[ObjectIdentifier(icon)] = (icon, url)
         return url
     }
 
@@ -3876,6 +3877,8 @@ enum ExtensionShims {
             return nil
         case "history.deleteAll":
             browser.history.forget()
+            // As Clear History does: the pages icons were kept for go too.
+            Favicons.shared.forgetAll()
             return nil
 
         // MARK: downloads

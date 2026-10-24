@@ -374,8 +374,7 @@ private struct MenuLine: View {
     let url: URL
 
     var body: some View {
-        if let site = Favicons.site(url),
-           let icon = Favicons.shared.cached(site) {
+        if let icon = Favicons.shared.cached(for: url) {
             Label {
                 Text(title)
             } icon: {
