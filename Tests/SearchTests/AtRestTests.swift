@@ -150,4 +150,18 @@ final class AtRestTests: XCTestCase {
         XCTAssertEqual(AtRest.of(url), AtRest.make(url))
         XCTAssertEqual(AtRest.of(url), AtRest.of(url))
     }
+
+    /// Drice's middle ground: with the setting off, only a warning is said.
+    func testWarningsAreSaidWithTheSettingOff() throws {
+        XCTAssertTrue(try XCTUnwrap(rest("http://example.com/")).warns, "plain http")
+        XCTAssertTrue(try XCTUnwrap(rest("https://xn--80ak6aa92e.com/")).warns, "a Cyrillic look-alike shown as punycode")
+        XCTAssertTrue(try XCTUnwrap(rest("https://xn--80ak6aa92e.example.com/")).warns, "a look-alike subdomain")
+        XCTAssertFalse(try XCTUnwrap(rest("https://github.com/")).warns)
+        XCTAssertFalse(try XCTUnwrap(rest("http://localhost:3000/")).warns, "this Mac")
+        XCTAssertFalse(try XCTUnwrap(rest("https://xn--wgv71a119e.jp/")).warns, "日本語.jp is safe to show as itself")
+        XCTAssertNil(AtRest.said(URL(string: "https://github.com/"), always: false))
+        XCTAssertNotNil(AtRest.said(URL(string: "https://github.com/"), always: true))
+        XCTAssertNotNil(AtRest.said(URL(string: "http://example.com/"), always: false))
+        XCTAssertNil(AtRest.said(URL(string: "about:blank"), always: true))
+    }
 }

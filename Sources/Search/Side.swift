@@ -900,8 +900,8 @@ private struct SideRow: View {
     private var peeking: Bool { !editing && tab.pin != nil && browser.peekFrom == tab.id && browser.peekTab != nil }
     /// Where the page is, said on the row you're on (Settings › Tabs › Show
     /// the address on the tab you're on).
-    private var atRest: Bool { prefs.showsAddress && live && !editing }
-    private var rest: AtRest? { atRest ? AtRest.of(tab.restAddress) : nil }
+    private var rest: AtRest? { live && !editing ? AtRest.said(tab.restAddress, always: prefs.showsAddress) : nil }
+    private var atRest: Bool { rest != nil }
 
     var body: some View {
         HStack(spacing: 8) {

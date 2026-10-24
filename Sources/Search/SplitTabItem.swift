@@ -120,8 +120,8 @@ private struct SplitTabHalf: View {
     private var editing: Bool { browser.editingTab == tab.id }
     /// Where the page is, said on the half you're on (Settings › Tabs › Show
     /// the address on the tab you're on).
-    private var atRest: Bool { prefs.showsAddress && focused && !editing && !narrow }
-    private var rest: AtRest? { atRest ? AtRest.of(tab.restAddress) : nil }
+    private var rest: AtRest? { focused && !editing && !narrow ? AtRest.said(tab.restAddress, always: prefs.showsAddress) : nil }
+    private var atRest: Bool { rest != nil }
 
     private var laidOut: some View {
         row

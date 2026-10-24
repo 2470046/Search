@@ -31,6 +31,21 @@ struct AtRest: Equatable {
     /// A port that isn't the scheme's own, dim: ":3000".
     let tail: String
 
+    /// Worth saying even with the setting off: a page over plain http, or a
+    /// name shown as the punycode it is because it could pass for another
+    /// (Hosts.display). With Settings › Tabs › Show the address on the tab
+    /// you're on, every page is said; without it, only these.
+    var warns: Bool {
+        kind == .notSecure || ((kind == .secure) && (lead + name).split(separator: ".").contains { $0.hasPrefix("xn--") })
+    }
+
+    /// What the tab you're on says at rest: everything with the setting on,
+    /// only a warning with it off.
+    static func said(_ url: URL?, always: Bool) -> AtRest? {
+        guard let rest = of(url), always || rest.warns else { return nil }
+        return rest
+    }
+
     /// All of it as one line, as read aloud and as the bench reports it.
     var text: String {
         (kind == .notSecure ? "Not secure — " : "") + lead + name + tail

@@ -516,7 +516,7 @@ struct SettingsPanel: View {
                 Switch(on: $prefs.showsReading)
             }
             Rule()
-            Line("Show the address on the tab you're on", "Its site in place of its title, so you can see where you are without a click; the title comes back under the pointer. Look-alike names in other alphabets show as they really are, and plain http says Not secure") {
+            Line("Show the address on the tab you're on", "Its site in place of its title, so you can see where you are without a click; the title comes back under the pointer. Look-alike names in other alphabets show as they really are, and plain http says Not secure. Off, the tab you're on still says so for those two") {
                 Switch(on: Binding(
                     get: { prefs.showsAddress },
                     set: { on in withAnimation(Motion.glide) { prefs.showsAddress = on } }

@@ -3688,7 +3688,7 @@ final class Bench {
             // it says it now: the setting on, the tab you're on, not edited
             // (see AtRest.swift).
             "atRest": AtRest.of(tab.restAddress)?.text ?? "",
-            "atRestShown": browser.map { $0.prefs.showsAddress && tab.id == $0.activeID && $0.editingTab != tab.id && AtRest.of(tab.restAddress) != nil } ?? false,
+            "atRestShown": browser.map { tab.id == $0.activeID && $0.editingTab != tab.id && AtRest.said(tab.restAddress, always: $0.prefs.showsAddress) != nil } ?? false,
             "asleep": tab.asleep,
             "shy": tab.shy,
             "noisy": tab.noisy,

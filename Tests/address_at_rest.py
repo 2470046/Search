@@ -77,6 +77,29 @@ def main():
         t.ok("off: no tab says its address", shown() == [], shown())
         t.ok("off: the line is still worked out for the bench", tabs()[first]["atRest"] == f"localhost:{PORT}", tabs()[first])
 
+        # Off, the front tab still warns: plain http and look-alike names.
+        warn_http = sv.sp("open", url="http://example.com/off")["resultID"]
+        until = time.time() + 10
+        while not tabs()[warn_http]["atRest"] and time.time() < until: time.sleep(0.3)
+        t.ok("off: plain http is still said on the front tab", shown() == [warn_http]
+             and tabs()[warn_http]["atRest"].startswith("Not secure — "), (shown(), tabs()[warn_http]["atRest"]))
+        warn_fake = sv.sp("open", url="https://xn--80ak6aa92e.com/off")["resultID"]
+        # Said once the page arrives (Tab.restAddress): a real site, so give
+        # the network its time.
+        until = time.time() + 10
+        while not tabs()[warn_fake]["atRest"] and time.time() < until: time.sleep(0.3)
+        t.ok("off: a look-alike name is still said, as punycode", shown() == [warn_fake]
+             and tabs()[warn_fake]["atRest"] == "xn--80ak6aa92e.com", (shown(), tabs()[warn_fake]["atRest"]))
+        plain_https = sv.sp("open", url="https://docs.github.com/off")["resultID"]
+        time.sleep(0.6)
+        t.ok("off: an ordinary https page keeps its title", shown() == [], shown())
+        safe_idn = sv.sp("open", url="https://xn--wgv71a119e.jp/")["resultID"]  # 日本語.jp
+        time.sleep(0.6)
+        t.ok("off: a name safe in its own alphabet keeps its title", shown() == [], (shown(), tabs()[safe_idn]["atRest"]))
+        sv.sp("select", id=first)
+        time.sleep(0.4)
+        t.ok("off: localhost over http is this Mac, not a warning", shown() == [], shown())
+
         ui(address=True)
         time.sleep(0.3)
         key = subprocess.run(["defaults", "read", sv.SUITE, "tabs.address"], capture_output=True, text=True).stdout.strip()
