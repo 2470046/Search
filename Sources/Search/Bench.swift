@@ -1510,7 +1510,9 @@ final class Bench {
             // passwords out of the keychain (the test world's own, by label).
             guard Store.testing else { answer(["error": "passwords only works on a --test run"]); return }
             if let filter = request["filter"] as? String { browser.hunting = filter }
-            browser.relist()
+            // "shown": the list as the page holds it now, not read again,
+            // so a route to the page that never read it shows as empty.
+            if request["shown"] as? Bool != true { browser.relist() }
             if request["remove"] as? Bool == true { browser.forgetShown() }
             // Answered once the removals, off the main thread, are done.
             func settled() {
