@@ -132,7 +132,7 @@ def arc_fixture():
 def main():
     t = sv.T()
     try:
-        sv.setup(spaces=True)
+        sv.setup(spaces=True, **{"panel.sites": True})
         # A space from before profiles, signed in on its own.
         os.makedirs(sv.SUPPORT, exist_ok=True)
         Path(f"{sv.SUPPORT}/spaces.json").write_text(json.dumps([
@@ -173,6 +173,16 @@ def main():
         t.ok("Raycast is sent its own cookie, not Personal's", cookie_sent("/echo?rc1") == "who=raycast", seen.get("/echo?rc1"))
         open_tab(f"{SITE}/echo?personal2")
         t.ok("Personal is still sent Personal's", cookie_sent("/echo?personal2") == "who=personal", seen.get("/echo?personal2"))
+
+        # A website in the side panel is signed in as its window's profile.
+        c({"do": "sidepanel", "action": "site", "url": f"{SITE}/echo?panel-rc"}, 2)
+        t.ok("the side panel's site in Raycast's window is signed in as Raycast", cookie_sent("/echo?panel-rc") == "who=raycast", seen.get("/echo?panel-rc"))
+        st = c({"do": "sidepanel"}, 2)
+        t.ok("and uses a Raycast store", st.get("content", {}).get("profileStore") is True, st.get("content"))
+        c({"do": "sidepanel", "action": "close"}, 2)
+        c({"do": "sidepanel", "action": "site", "url": f"{SITE}/echo?panel-personal"})
+        t.ok("Personal's window's side panel is signed in as Personal", cookie_sent("/echo?panel-personal") == "who=personal", seen.get("/echo?panel-personal"))
+        c({"do": "sidepanel", "action": "close"})
 
         space("new", window=2, name="Raycast Two")
         time.sleep(0.8)
