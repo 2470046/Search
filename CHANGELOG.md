@@ -13,6 +13,7 @@ in [ROADMAP.md](ROADMAP.md).
 
 ### Added
 
+- Move Group to Space, in a tab group's menu: every tab of the group goes to the other space, in its order, and is the same group there, folded or open as it was. A space with its own sign-ins asks first only when a page in the group has something typed and not sent, once for the group.
 - Websites in the side panel: Claude, ChatGPT, Gemini, Perplexity or the page you're on, beside the page without an extension, from View › Side Panel or a tab's Open in Side Panel. It's a page of the space you're in, signed in where that space's tabs are and never a private tab's; its address is on the panel's own line, a link it opens in a new window goes to a tab, and Open in a Tab takes it into one. Off unless you turn it on in Settings › General › Websites in the side panel
 - The floating video can be macOS's own picture in picture instead of Search's window: Settings › General › The floating video. ⇧⌘P, and leaving the tab or the app when those float a video, then hand it to the system's window, the one Safari uses, and coming back to the tab brings it home. Search's window stays the default; it floats a video without a click and keeps its page alive in it
 - A pin's ⌘ number pressed again while you're on that pin takes you back to the tab you were on before it, and once more back to the pin. Off unless you turn it on in Settings › Tabs › A pin's number again goes back
