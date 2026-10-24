@@ -41,4 +41,29 @@ final class ExtensionRuleRedirectTests: XCTestCase {
         XCTAssertTrue(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: https, manifest: httpsOnly, fromRule: true))
         XCTAssertFalse(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: http, manifest: httpsOnly, fromRule: true))
     }
+
+    /// The scheme of a web_accessible_resources origin is matched as
+    /// written: an http pattern never lets an https site's own return in,
+    /// and "*" covers both for a rule's redirect.
+    func testOriginSchemesMatchAsWritten() {
+        let blocked = URL(string: base + "/blocked.html")!
+        let https = URL(string: "https://example.com/")!
+        let http = URL(string: "http://example.com/")!
+        func exposed(_ match: String) -> [String: Any] {
+            ["manifest_version": 3, "web_accessible_resources": [["resources": ["blocked.html"], "matches": [match]]]]
+        }
+        XCTAssertFalse(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: https, manifest: exposed("http://example.com/*")))
+        XCTAssertFalse(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: https, manifest: exposed("http://example.com/*"), fromRule: true))
+        XCTAssertTrue(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: http, manifest: exposed("http://example.com/*"), fromRule: true))
+        XCTAssertTrue(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: http, manifest: exposed("*://example.com/*"), fromRule: true))
+        XCTAssertFalse(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: http, manifest: exposed("*://example.com/*")))
+        // Never a file: or other scheme as the site.
+        for odd in ["file:///etc/", "data:text/html,x", "javascript:x"] {
+            XCTAssertFalse(ExtensionRedirectPolicy.allows(target: blocked, sourceOrigin: URL(string: odd)!, manifest: exposed("<all_urls>"), fromRule: true), odd)
+        }
+        // Only an extension page is a target.
+        for odd in ["javascript:alert(1)", "data:text/html,x", "file:///etc/hosts", "https://example.com/blocked.html"] {
+            XCTAssertFalse(ExtensionRedirectPolicy.allows(target: URL(string: odd)!, sourceOrigin: https, manifest: exposed("<all_urls>"), fromRule: true), odd)
+        }
+    }
 }
