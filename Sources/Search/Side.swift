@@ -141,13 +141,15 @@ struct SideBar: View {
     }
 
     /// The column's edge: pull it to make the column wider or narrower,
-    /// double-click it to put it back. The hairline darkens under the pointer
-    /// so the edge says it can be taken before it is.
+    /// double-click it to put it back. The whole edge takes the pointer; on
+    /// it, a small pill shows in the middle (see Grip) so the edge says it
+    /// can be taken before it is. Edge to edge, the pill sits on the page's
+    /// hairline; as cards, in the gap before the page.
     private var edge: some View {
-        Rectangle()
-            .fill(Palette.ink.opacity(onEdge || grabbed != nil ? 0.18 : 0))
-            .frame(width: onEdge || grabbed != nil ? 2 : 1)
+        EdgeGrip(lit: onEdge || grabbed != nil)
+            .offset(x: onFrame ? 0 : onRight ? -4 : 4)
             .frame(width: 9)
+            .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
             .onHover { over in
                 onEdge = over
