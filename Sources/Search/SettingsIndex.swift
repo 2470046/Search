@@ -325,8 +325,9 @@ enum SettingsIndex {
 
         // Privacy
         .init(id: "shield", group: "blocking", icon: "shield.lefthalf.filled",
-              title: "Block ads and trackers", detail: "Third parties whose only job is to watch",
-              keys: ["shield"], words: ["adblock", "ad blocker", "ads"]),
+              title: "Block ads and trackers", detail: "Third parties whose only job is to watch, and YouTube's ads",
+              more: "On YouTube, the ads announced in the player's own data are taken out before the video starts. Turn it off for one site from the site's row.",
+              keys: ["shield"], words: ["adblock", "ad blocker", "ads", "youtube"]),
         .init(id: "sites.keep", group: "blocking", icon: "eye.slash",
               title: "Prevent cross-site tracking", detail: "As in Safari. Private tabs keep it on",
               more: "Off, sites you rarely open keep their sign-ins, and trackers inside other sites can follow you across them again, as in Chrome.",

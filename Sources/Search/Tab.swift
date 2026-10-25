@@ -1129,6 +1129,12 @@ final class Tab: ObservableObject, Identifiable {
                 WKUserScript(source: dusk, injectionTime: .atDocumentStart, forMainFrameOnly: false, in: Web.world)
             )
         }
+        // YouTube's ads, while Shield is on for the site this tab is on
+        // (see YouTubeAds.swift). Every frame; each script does nothing in a
+        // frame that isn't YouTube's.
+        for script in YouTubeAds.scripts(for: Dusk.host(of: url ?? pageAddress)) {
+            controller.addUserScript(script)
+        }
         guard !css.isEmpty else { return }
         controller.addUserScript(
             WKUserScript(source: Veiling.style(css), injectionTime: .atDocumentStart, forMainFrameOnly: true, in: Web.world)
