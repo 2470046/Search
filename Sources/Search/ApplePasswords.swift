@@ -382,11 +382,13 @@ final class ApplePasswords: ObservableObject {
     /// Only accounts kept for this site, as Search's own are matched: the
     /// host, or anything sharing its registrable domain. The helper may know
     /// wider ties (a company's several domains); those are not offered.
-    nonisolated static func belongs(_ sites: [String], to host: String, registrable: (String) -> String = Vault.registrable) -> Bool {
+    /// `wide` false: the host alone, for a box that only might be a sign-in's.
+    nonisolated static func belongs(_ sites: [String], to host: String, wide: Bool = true,
+                                    registrable: (String) -> String = Vault.registrable) -> Bool {
         let domain = registrable(bare(host))
         return sites.contains { site in
             let site = bare(Vault.host(of: site).isEmpty ? site : Vault.host(of: site))
-            return site == bare(host) || registrable(site) == domain
+            return site == bare(host) || (wide && registrable(site) == domain)
         }
     }
 

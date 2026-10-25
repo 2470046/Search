@@ -588,7 +588,7 @@ final class Tab: ObservableObject, Identifiable {
     /// is, in the web view's points, or nil when it has left. Then whether
     /// it goes with a password, and whether it is a first step's name box,
     /// which takes the name alone.
-    var onField: ((Tab, CGRect?, Bool, Bool) -> Void)?
+    var onField: ((Tab, CGRect?, Bool, Bool, Bool) -> Void)?
     /// The site the sign-in was sent from — not the one it landed on —
     /// then the name and the password, and whether that page came over
     /// plain http.
@@ -1150,16 +1150,19 @@ final class Tab: ObservableObject, Identifiable {
     /// `passwords`: a box of a sign-in with a password, not one only for
     /// passkeys. `name`: the name box of a sign-in that asks for the
     /// password on the next page.
-    func fieldFocused(_ rect: CGRect?, passwords: Bool = true, name: Bool = false) {
+    /// `wide`: clearly a sign-in's box, so accounts kept for the site's
+    /// other hosts (its registrable domain) may come; otherwise only this
+    /// host's own.
+    func fieldFocused(_ rect: CGRect?, passwords: Bool = true, name: Bool = false, wide: Bool = true) {
         guard let rect else {
-            onField?(self, nil, false, false)
+            onField?(self, nil, false, false, false)
             return
         }
         let zoom = built?.pageZoom ?? 1
         onField?(self, CGRect(
             x: rect.minX * zoom, y: rect.minY * zoom,
             width: rect.width * zoom, height: rect.height * zoom
-        ), passwords, name)
+        ), passwords, name, wide)
     }
 
     /// The name a sign-in that asks for it first was just sent, for the

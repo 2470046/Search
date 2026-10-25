@@ -718,6 +718,9 @@ final class Browser: NSObject, ObservableObject {
         /// was already on its way is not a choice, so the list takes none for
         /// its first half second, as Chrome's does.
         var shown = Date()
+        /// Hung from a box that is clearly a sign-in's, with the site's
+        /// other hosts' accounts; false: this host's alone.
+        var wide = true
     }
     /// Set once you have picked, so the list doesn't come straight back for
     /// the box you are still in. Cleared when the caret leaves the boxes.
@@ -729,7 +732,7 @@ final class Browser: NSObject, ObservableObject {
     /// The page whose accounts were last looked up for the box the caret is
     /// in. The box reports where it is on every frame of a scroll so the
     /// list can follow it; the keychain is asked once per box, not per frame.
-    private var looked: (tab: Tab.ID, host: String, clear: Bool, name: Bool)?
+    private var looked: (tab: Tab.ID, host: String, clear: Bool, name: Bool, wide: Bool)?
     /// The sign-in box the caret is in, for a list that changes while it is
     /// there: the page's passkeys arrive when they arrive.
     private var field: (tab: Tab.ID, spot: CGRect, passwords: Bool, name: Bool)?
@@ -764,7 +767,7 @@ final class Browser: NSObject, ObservableObject {
     /// Mac's passkeys for a page waiting for one, hang from the box, and go
     /// when the caret does. Nothing is filled on its own — the way Safari
     /// does it, and what a person expects.
-    private func hang(from tab: Tab, _ spot: CGRect?, passwords: Bool, name: Bool = false) {
+    private func hang(from tab: Tab, _ spot: CGRect?, passwords: Bool, name: Bool = false, wide: Bool = true) {
         guard let spot else {
             if field?.tab == tab.id { field = nil; appleAsk += 1 }
             if looked?.tab == tab.id { looked = nil }
@@ -794,18 +797,21 @@ final class Browser: NSObject, ObservableObject {
         // its first half second, which every frame used to start again);
         // a box with no accounts stays without, and the keychain isn't
         // asked again until the caret leaves.
-        if let looked, looked.tab == tab.id, looked.host == host, looked.clear == inTheClear, looked.name == name {
+        if let looked, looked.tab == tab.id, looked.host == host, looked.clear == inTheClear, looked.name == name,
+           looked.wide == wide {
             if var up = suggesting, up.tab == tab.id, up.spot != spot {
                 up.spot = spot
                 suggesting = up
             }
             return
         }
-        looked = (tab.id, host, inTheClear, name)
+        looked = (tab.id, host, inTheClear, name, wide)
         // Passwords only for a box that goes with one: a box for passkeys
-        // alone has no password to put anywhere.
+        // alone has no password to put anywhere. A box that only might be a
+        // sign-in's gets this host's own accounts, never the rest of the
+        // site's: console.cloud.google.com's project name is not Gmail's.
         var kept = prefs.fillsPasswords && passwords
-            ? Vault.kept(matching: host).filter { !inTheClear || $0.clear } : []
+            ? Vault.kept(matching: host, wide: wide).filter { !inTheClear || $0.clear } : []
         // The account whose name the step before was sent with comes first:
         // the password page of a sign-in that asks for the name first.
         if let given = tab.givenName(),
@@ -825,7 +831,7 @@ final class Browser: NSObject, ObservableObject {
         appleAsk += 1
         // Asked only for the tab in front of you, in the window you are in.
         if let appleHost, apple.state == .paired, tab.built?.window?.isKeyWindow == true {
-            lookUpApple(appleHost, in: tab, host: host, name: name)
+            lookUpApple(appleHost, in: tab, host: host, name: name, wide: wide)
         }
         guard !known.isEmpty || !passkeys.isEmpty || connect else {
             suggesting = nil
@@ -833,17 +839,17 @@ final class Browser: NSObject, ObservableObject {
         }
         // What is under the pointer changed: the half second starts again.
         if let up = suggesting, up.tab == tab.id, up.logins == known, up.passkeys == passkeys, up.nameOnly == name,
-           up.appleConnect == connect, up.apple.isEmpty {
+           up.appleConnect == connect, up.apple.isEmpty, up.wide == wide {
             suggesting?.spot = spot
             return
         }
         suggesting = Suggesting(tab: tab.id, spot: spot, logins: known, passkeys: passkeys, host: host, clear: inTheClear,
-                                nameOnly: name, appleHost: appleHost, appleConnect: connect)
+                                nameOnly: name, appleHost: appleHost, appleConnect: connect, wide: wide)
     }
 
     /// Asks Apple's helper for the names it keeps for the page, and adds
     /// them under the box if the caret is still in it, on the same page.
-    private func lookUpApple(_ appleHost: String, in tab: Tab, host: String, name: Bool) {
+    private func lookUpApple(_ appleHost: String, in tab: Tab, host: String, name: Bool, wide: Bool) {
         let ask = appleAsk
         Task { [weak self] in
             // A page that moves the caret from box to box queues no backlog:
@@ -857,7 +863,7 @@ final class Browser: NSObject, ObservableObject {
             else { return }
             let mine = suggesting?.tab == tab.id ? suggesting?.logins ?? [] : []
             let apple = Array(found
-                .filter { ApplePasswords.belongs($0.sites, to: appleHost) }
+                .filter { ApplePasswords.belongs($0.sites, to: appleHost, wide: wide) }
                 .filter { theirs in !mine.contains { $0.user.caseInsensitiveCompare(theirs.user) == .orderedSame } }
                 .prefix(5))
             guard !apple.isEmpty else { return }
@@ -5225,8 +5231,8 @@ final class Browser: NSObject, ObservableObject {
         // The caret in a sign-in box: the accounts kept for this site hang
         // from the box, and go when the caret does. Nothing is filled on
         // its own — the way Safari does it, and what a person expects.
-        tab.onField = { [weak self] tab, spot, passwords, name in
-            self?.hang(from: tab, spot, passwords: passwords, name: name)
+        tab.onField = { [weak self] tab, spot, passwords, name, wide in
+            self?.hang(from: tab, spot, passwords: passwords, name: name, wide: wide)
         }
 
         tab.onCredentials = { [weak self] tab, host, user, password, clear in
