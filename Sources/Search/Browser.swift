@@ -3553,10 +3553,28 @@ final class Browser: NSObject, ObservableObject {
         // takes you into a pin you had not asked for, and wakes it if it was
         // asleep. The pins stay where they are; a new tab takes this one's
         // place. Off, the neighbour is picked as before (#537).
-        if prefs.newTabAfterLast, activeID == tab.id,
-           !tabs.contains(where: { $0.id != tab.id && $0.pin == nil }) {
+        //
+        // Tabs in groups are kept as pins are, as Arc keeps its folders: the
+        // last loose tab closed beside them leaves a new tab too, switch or
+        // no switch. Its neighbour was a page out of a folder, the folder
+        // opened for it, and ⌘T then floated its field over that page
+        // rather than giving a new tab. An empty tab closed
+        // there stays: it is already the new tab closing it would leave, and
+        // the window, holding the groups, stays open.
+        let kept: (Tab) -> Bool = { $0.pin != nil || self.group(of: $0) != nil }
+        let besideGroups = tabs.contains { $0.id != tab.id && $0.pin == nil && self.group(of: $0) != nil }
+        let onlyPins = prefs.newTabAfterLast && !tabs.contains { $0.id != tab.id && $0.pin == nil }
+        let onlyKept = besideGroups && !kept(tab) && !tabs.contains { $0.id != tab.id && !kept($0) }
+        if activeID == tab.id, onlyPins || onlyKept {
             if tab.isBlank {
-                NSApp.keyWindow?.performClose(nil)
+                if besideGroups {
+                    typed = ""
+                    tab.draft = ""
+                    editing = false
+                    focusRequest += 1
+                } else {
+                    NSApp.keyWindow?.performClose(nil)
+                }
                 return
             }
             let fresh = Tab(configuration: Web.configuration(space: spaceID))
