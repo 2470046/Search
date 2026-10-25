@@ -11,6 +11,14 @@ in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Held back
+
+Not in this version, kept on main for a later one:
+
+- AI on pages, off unless you turn it on in Settings › AI: Summarize Page and Ask About This Page… in the View menu, answered where you choose — a model downloaded to this Mac (Apple Silicon: Qwen3 1.7B, 1.1 GB, checked before every use and run by a small program of Search's own that can't reach the network or your files), Ollama or LM Studio on this Mac, your own key for Anthropic, OpenAI, Google Gemini or OpenRouter, or signing in with your OpenRouter account. The answer comes in a panel beside the page, in plain text, marked as possibly wrong and with where it ran; follow-up questions stay in the panel, and nothing is kept once it closes. Only the page's visible text goes, never a password, a form or another tab; the page's words are given to the model as something to read, not orders, and any web address, email or phone number in the answer that isn't on the page is pointed out. Keys stay in this Mac's keychain and go only to their provider; a provider off this Mac is shown what it will be sent before the first request, and a private tab uses only what runs on this Mac.
+
+## 1.0.7 — 25 October 2026
+
 ### Added
 
 - Shield blocks YouTube's ads: on youtube.com, YouTube Music and YouTube videos embedded in other sites, the ads YouTube schedules in its player's own data are taken out before the video starts, and the player's ad reports aren't sent. It is part of Settings › Privacy › Block ads and trackers, on with it, and Block on youtube.com turns it off for YouTube alone. An ad that plays all the same goes by muted and fast, and the video's sound and speed come back after it. YouTube changes its pages often, so an ad may get through until the next update
@@ -89,12 +97,6 @@ in [ROADMAP.md](ROADMAP.md).
 - A pinned tab going between an extension's page and a website stays the same pin. It became a new one, so every other window closed its tab for the pin and made a sleeping one, losing the page it was on there; the page it was pinned at, where a double-click on it goes back to, became wherever it had just gone; and a pin every space shows was kept as this space's own. Thanks [@oddharsh](https://github.com/oddharsh) ([#707](https://github.com/driceroland/Search/pull/707))
 - Local file tabs come back after quitting Search, in their tab groups too. They were left out of the saved session; private tabs are still never saved. Thanks [@mocki-toki](https://github.com/mocki-toki) for the fix and [@ralvs](https://github.com/ralvs) for the report ([#713](https://github.com/driceroland/Search/pull/713), [#699](https://github.com/driceroland/Search/issues/699))
 - With Settings › Spaces & Pins › Opening and starting › New tab in a floating field on, ⌘T opens a tab, and Search asks there, when an extension you haven't answered has asked to replace the new tab page. The field came up over the page instead, so the extension was never asked and its page never appeared. Thanks [@oddharsh](https://github.com/oddharsh) ([#714](https://github.com/driceroland/Search/pull/714))
-
-### Held back
-
-Not in this version, kept on main for a later one:
-
-- AI on pages, off unless you turn it on in Settings › AI: Summarize Page and Ask About This Page… in the View menu, answered where you choose — a model downloaded to this Mac (Apple Silicon: Qwen3 1.7B, 1.1 GB, checked before every use and run by a small program of Search's own that can't reach the network or your files), Ollama or LM Studio on this Mac, your own key for Anthropic, OpenAI, Google Gemini or OpenRouter, or signing in with your OpenRouter account. The answer comes in a panel beside the page, in plain text, marked as possibly wrong and with where it ran; follow-up questions stay in the panel, and nothing is kept once it closes. Only the page's visible text goes, never a password, a form or another tab; the page's words are given to the model as something to read, not orders, and any web address, email or phone number in the answer that isn't on the page is pointed out. Keys stay in this Mac's keychain and go only to their provider; a provider off this Mac is shown what it will be sent before the first request, and a private tab uses only what runs on this Mac.
 
 ## 1.0.6 — 24 October 2026
 
