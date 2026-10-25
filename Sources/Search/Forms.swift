@@ -43,6 +43,7 @@ final class FormRelay: NSObject, WKScriptMessageHandler {
                 // page — so a list of accounts can hang from it.
                 // A box of a name and password, or one the page marks for
                 // passkeys alone ("webauthn"), which takes no password.
+                tab?.fieldFrameHost = message.frameInfo.isMainFrame ? nil : message.frameInfo.securityOrigin.host
                 if let rect = body["rect"] as? [String: Double],
                    let x = rect["x"], let y = rect["y"], let w = rect["w"], let h = rect["h"] {
                     // `wide`: a box that is clearly a sign-in's, offered the

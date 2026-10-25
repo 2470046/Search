@@ -122,6 +122,9 @@ final class ApplePasswords: ObservableObject {
 
     private let makeLink: () throws -> AppleLink
     private var link: AppleLink?
+    /// The bench's stand-in for the helper, kept to be asked how often it
+    /// was started (Bench `appleoffer`).
+    var standIn: AppleLink?
     private var client: SRPClient?
     private var numbers: (serverKey: [UInt8], salt: [UInt8])?
     private var key: SymmetricKey?
@@ -138,6 +141,10 @@ final class ApplePasswords: ObservableObject {
 
     init(makeLink: (() throws -> AppleLink)? = nil, prefs: Preferences? = nil) {
         self.makeLink = makeLink ?? {
+            // A test run never runs Apple's helper: it would put its window
+            // on the screen of whoever is working beside it, and ask their
+            // real Passwords app. Tests hand in a helper of their own.
+            guard !Store.testing else { throw Unavailable(errorDescription: "Apple's Passwords helper isn't run in a test") }
             guard #available(macOS 15.4, *) else { throw Unavailable(errorDescription: "Needs macOS 15.4 or later") }
             guard let program = AppleHelper.program() else {
                 throw Unavailable(errorDescription: "Apple's Passwords helper isn't on this Mac")

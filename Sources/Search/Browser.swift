@@ -691,7 +691,19 @@ final class Browser: NSObject, ObservableObject {
     /// The accounts kept for the site whose sign-in box has the caret, and
     /// where that box is — a list hangs from it, and a click fills the form.
     /// Nothing is put into a page until you have pointed at it.
-    @Published private(set) var suggesting: Suggesting?
+    @Published private(set) var suggesting: Suggesting? {
+        didSet {
+            // The offer to use Apple Passwords went without a click on it
+            // or its ✕: counted, and after twice it isn't made again.
+            guard let site = oldValue?.appleOffer, suggesting?.appleOffer != site else { return }
+            if offerAnswered { offerAnswered = false } else { applePasswordsOffer.unanswered() }
+        }
+    }
+    /// The offer's row or its ✕ was clicked: not counted as unanswered.
+    private var offerAnswered = false
+    /// Where "Use your Apple passwords?" was offered and answered
+    /// (ApplePasswordsOffer). A test gives its own.
+    var applePasswordsOffer = ApplePasswordsOffer(store: Store.settings)
 
     struct Suggesting: Equatable {
         let tab: Tab.ID
@@ -713,6 +725,10 @@ final class Browser: NSObject, ObservableObject {
         var appleHost: String?
         /// Apple Passwords is on but not paired: a row to connect.
         var appleConnect = false
+        /// Apple Passwords is off and Search keeps nothing for this site: a
+        /// quiet row at the bottom offers it, once (ApplePasswordsOffer). The
+        /// site it is counted against.
+        var appleOffer: String?
         /// When it came up. A page can put the caret in a sign-in box
         /// itself, an invisible one under the pointer included: a click that
         /// was already on its way is not a choice, so the list takes none for
@@ -828,23 +844,35 @@ final class Browser: NSObject, ObservableObject {
             ? ApplePasswords.offers(on: tab.pageAddress, privateTab: tab.shy) : nil
         let apple = applePasswords
         let connect = appleHost != nil && apple.state == .idle && applePairing?.tab != tab.id
+        // Off, and nothing of Search's own for this site: the offer, once.
+        // The row already up under this box stays up while it is there.
+        let offer: String? = {
+            if let up = suggesting, up.tab == tab.id, let site = up.appleOffer, site == Vault.registrable(host) { return site }
+            return applePasswordsOffer.site(
+                for: .init(page: tab.pageAddress, privateTab: tab.shy, frameHost: tab.fieldFrameHost,
+                           passwords: passwords, kept: known.count),
+                .init(appleOn: prefs.applePasswords, fills: prefs.fillsPasswords,
+                      helper: ApplePasswordsOffer.benchHelper ?? ApplePasswordsOffer.helperHere,
+                      testRun: Store.testing, benchAsks: ApplePasswordsOffer.benchAsks))
+        }()
         appleAsk += 1
         // Asked only for the tab in front of you, in the window you are in.
         if let appleHost, apple.state == .paired, tab.built?.window?.isKeyWindow == true {
             lookUpApple(appleHost, in: tab, host: host, name: name, wide: wide)
         }
-        guard !known.isEmpty || !passkeys.isEmpty || connect else {
+        guard !known.isEmpty || !passkeys.isEmpty || connect || offer != nil else {
             suggesting = nil
             return
         }
         // What is under the pointer changed: the half second starts again.
         if let up = suggesting, up.tab == tab.id, up.logins == known, up.passkeys == passkeys, up.nameOnly == name,
-           up.appleConnect == connect, up.apple.isEmpty, up.wide == wide {
+           up.appleConnect == connect, up.apple.isEmpty, up.wide == wide, up.appleOffer == offer {
             suggesting?.spot = spot
             return
         }
         suggesting = Suggesting(tab: tab.id, spot: spot, logins: known, passkeys: passkeys, host: host, clear: inTheClear,
-                                nameOnly: name, appleHost: appleHost, appleConnect: connect, wide: wide)
+                                nameOnly: name, appleHost: appleHost, appleConnect: connect, appleOffer: offer, wide: wide)
+        if let offer { applePasswordsOffer.shown(on: offer) }
     }
 
     /// Asks Apple's helper for the names it keeps for the page, and adds
@@ -932,6 +960,43 @@ final class Browser: NSObject, ObservableObject {
         guard let list = suggesting, Date().timeIntervalSince(list.shown) > 0.5 else { return }
         suggesting = nil
         beginApplePairing(on: list.tab, at: list.spot)
+    }
+
+    /// "Use your Apple passwords?" clicked: the switch turned on, as in
+    /// Settings › Passwords, and the pairing card where the list was. Once
+    /// paired, the caret goes back to the box and the accounts come up.
+    func useApplePasswords() {
+        lowering?.cancel()
+        guard let list = suggesting, list.appleOffer != nil, Date().timeIntervalSince(list.shown) > 0.5 else { return }
+        offerAnswered = true
+        suggesting = nil
+        prefs.applePasswords = true
+        beginApplePairing(on: list.tab, at: list.spot)
+    }
+
+    /// The offer's ✕: "don't offer again", anywhere. The rest of the list
+    /// stays.
+    func neverOfferApplePasswords() {
+        lowering?.cancel()
+        guard var list = suggesting, list.appleOffer != nil, Date().timeIntervalSince(list.shown) > 0.5 else { return }
+        applePasswordsOffer.dismissed()
+        offerAnswered = true
+        list.appleOffer = nil
+        let empty = list.logins.isEmpty && list.passkeys.isEmpty && list.apple.isEmpty && !list.appleConnect
+        suggesting = empty ? nil : list
+    }
+
+    /// For a test run only: the offer under a box of `tab`, as `hang` puts
+    /// it up, `age` seconds ago; or (nil) the list taken down as the caret
+    /// leaving takes it.
+    func testOffer(on tab: Tab.ID?, site: String = "example.com", age: TimeInterval = 1) {
+        guard Store.testing else { return }
+        guard let tab else { suggesting = nil; return }
+        var list = Suggesting(tab: tab, spot: CGRect(x: 40, y: 120, width: 280, height: 30), logins: [], host: site,
+                              clear: false, appleOffer: site)
+        list.shown = Date().addingTimeInterval(-age)
+        suggesting = list
+        applePasswordsOffer.shown(on: site)
     }
 
     /// Pairing with Apple Passwords from under a sign-in box: the card that

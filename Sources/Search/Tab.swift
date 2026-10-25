@@ -1150,6 +1150,11 @@ final class Tab: ObservableObject, Identifiable {
     /// `passwords`: a box of a sign-in with a password, not one only for
     /// passkeys. `name`: the name box of a sign-in that asks for the
     /// password on the next page.
+    /// The host of the frame the sign-in box with the caret is in, when it
+    /// isn't the page itself: an offer is only made from the page's own site
+    /// (ApplePasswordsOffer). Set before `fieldFocused` by FormRelay.
+    var fieldFrameHost: String?
+
     /// `wide`: clearly a sign-in's box, so accounts kept for the site's
     /// other hosts (its registrable domain) may come; otherwise only this
     /// host's own.

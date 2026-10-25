@@ -2045,6 +2045,46 @@ final class Bench {
             }
             answer(out)
 
+        case "appleoffer":
+            // "Use your Apple passwords?" under a sign-in box (ApplePasswordsOffer),
+            // which a test run never shows unless asked here. "asks": offer as a
+            // person would see it, with a stand-in for Apple's helper that
+            // only counts its starts (Apple's own is never run from a test).
+            // "helper": false, as on a Mac without it. "show"/"drop": the row
+            // up under the tab in front, or the list taken down. "use",
+            // "never": its row or its ✕ clicked. "forget": never offered.
+            guard Store.testing else { answer(["error": "appleoffer only works on a --test run"]); return }
+            if let on = request["asks"] as? Bool {
+                ApplePasswordsOffer.benchAsks = on
+                if on, browser.applePasswords.standIn == nil {
+                    let link = StandInLink()
+                    browser.applePasswords = ApplePasswords(makeLink: { link })
+                    browser.applePasswords.standIn = link
+                }
+            }
+            if let on = request["helper"] as? Bool { ApplePasswordsOffer.benchHelper = on }
+            if request["forget"] as? Bool == true { browser.applePasswordsOffer.forget(); browser.prefs.applePasswords = false }
+            if let site = request["show"] as? String, let tab = browser.activeID {
+                browser.testOffer(on: tab, site: site, age: request["age"] as? Double ?? 1)
+            }
+            if request["drop"] as? Bool == true { browser.testOffer(on: nil) }
+            if request["use"] as? Bool == true { browser.useApplePasswords() }
+            if request["never"] as? Bool == true { browser.neverOfferApplePasswords() }
+            let offer = browser.applePasswordsOffer
+            answer([
+                "asks": ApplePasswordsOffer.benchAsks,
+                "offered": offer.offered.sorted(),
+                "unanswered": offer.store.integer(forKey: ApplePasswordsOffer.unansweredKey),
+                "never": offer.store.bool(forKey: ApplePasswordsOffer.neverKey),
+                "retired": offer.retired,
+                "row": browser.suggesting?.appleOffer ?? "",
+                "shown": browser.suggesting != nil,
+                "on": browser.prefs.applePasswords,
+                "pairing": browser.applePairing != nil,
+                "state": "\(browser.applePasswords.state)",
+                "standInStarts": (browser.applePasswords.standIn as? StandInLink)?.starts ?? 0,
+            ])
+
         case "fill":
             // What the window spends on the page scrolling: the page's report
             // of where it is, STEPS times, 8 ms apart, each timed until the
@@ -4375,4 +4415,17 @@ private final class LoopClock: @unchecked Sendable {
         return ["count": Double(sorted.count), "p50": at(0.5), "p95": at(0.95), "max": sorted.last!,
                 "total": sorted.reduce(0, +)]
     }
+}
+
+
+/// Apple's helper, stood in for in a test run (bench `appleoffer`): it starts,
+/// counts that it did, and never answers, so a pairing begun from the offer
+/// waits for a code that never comes. Apple's own is never run from a test.
+final class StandInLink: AppleLink {
+    var onMessage: (([String: Any]) -> Void)?
+    var onEnd: (() -> Void)?
+    private(set) var starts = 0
+    func start() throws { starts += 1 }
+    func send(_ message: [String: Any]) throws {}
+    func stop() {}
 }
