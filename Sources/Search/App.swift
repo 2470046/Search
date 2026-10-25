@@ -587,10 +587,10 @@ struct ContentView: View {
     private var chrome: CGSize {
         let bar = barShown ? BookmarksBar.height : 0
         if cards {
-            return CGSize(width: sidebar ? browser.prefs.sideWidth : Metrics.cardGap,
+            return CGSize(width: sidebar ? browser.prefs.columnWidth : Metrics.cardGap,
                           height: barShown ? bar : Metrics.cardGap)
         }
-        return CGSize(width: sidebar ? browser.prefs.sideWidth : 0, height: band + bar)
+        return CGSize(width: sidebar ? browser.prefs.columnWidth : 0, height: band + bar)
     }
 
     /// The page as a card on the window's ground: with the tabs down the
@@ -720,8 +720,8 @@ struct ContentView: View {
                 // Centred on the page, not on the window. The column of tabs
                 // is not what the field is standing over, and dimming it along
                 // with the page says otherwise.
-                .padding(.leading, sidebar && !sideOnRight ? browser.prefs.sideWidth : 0)
-                .padding(.trailing, sidebar && sideOnRight ? browser.prefs.sideWidth : 0)
+                .padding(.leading, sidebar && !sideOnRight ? browser.prefs.columnWidth : 0)
+                .padding(.trailing, sidebar && sideOnRight ? browser.prefs.columnWidth : 0)
                 .transition(.scale(scale: 0.97).combined(with: .opacity))
         }
     }
@@ -824,7 +824,7 @@ struct ContentView: View {
             .onChange(of: browser.prefs.sidePosition) { _, _ in
                 DispatchQueue.main.async { Lights.refresh(window); measureLights() }
             }
-            .onChange(of: browser.prefs.sideWidth) { _, _ in
+            .onChange(of: browser.prefs.columnWidth) { _, _ in
                 DispatchQueue.main.async { Lights.refresh(window); measureLights() }
             }
             // Stepping away to another app: macOS draws its own resting
@@ -1091,9 +1091,9 @@ struct ContentView: View {
         // its three doors sit on the lights' line.
         Lights.keep(window, centreX: { window in
             browser.prefs.sidebar && browser.prefs.sidePosition == .right
-                ? window.frame.width - browser.prefs.sideWidth + Lights.centre.x
+                ? window.frame.width - browser.prefs.columnWidth + Lights.centre.x
                 : Lights.centre.x
-        }) { measureLights() }
+        }, vertical: { _ in browser.prefs.iconColumn }) { measureLights() }
         DispatchQueue.main.async { measureLights() }
 
         // The traffic lights are drawn — measured, they paint themselves — but

@@ -1151,6 +1151,24 @@ private struct LayoutPicture: View {
                     if layout == .left { page }
                 }
                 .padding(5)
+            case .icons:
+                // A narrow column of squares, one under the other: the
+                // tabs' icons, no titles.
+                HStack(spacing: 4) {
+                    VStack(spacing: 3) {
+                        VStack(spacing: 1.5) {
+                            ForEach(0..<3) { _ in Circle().fill(Palette.ink.opacity(0.25)).frame(width: 3, height: 3) }
+                        }
+                        .padding(.bottom, 1)
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(lit).frame(width: 6, height: 6)
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(tab).frame(width: 6, height: 6)
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous).fill(tab).frame(width: 6, height: 6)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(width: 8)
+                    page
+                }
+                .padding(5)
             }
         }
     }

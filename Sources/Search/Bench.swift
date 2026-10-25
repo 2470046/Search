@@ -758,6 +758,9 @@ final class Bench {
                 "sidebar": browser.prefs.sidebar,
                 "sidePosition": browser.prefs.sidePosition.rawValue,
                 "sideWidth": Double(browser.prefs.sideWidth),
+                // The column as drawn, and whether it is icons only.
+                "columnWidth": Double(browser.prefs.columnWidth),
+                "sideIcons": browser.prefs.sideIcons,
                 "appearance": NSApp.appearance?.name.rawValue ?? "system",
                 "key": NSApp.keyWindow.map { "\(type(of: $0)) “\($0.title)”" } ?? "",
                 // What the keyboard goes to in the key window, or the browser's: a find field,
@@ -2045,6 +2048,28 @@ final class Bench {
             }
             answer(out)
 
+        case "icons":
+            // The column as icons only (SideIcons.swift): "on" turns it on or
+            // off as Settings' Icons only does; the answer is every tile the
+            // column has drawn — where, in the window from its top-left, and
+            // its tooltip — and the pairs among them. Test runs only.
+            guard Store.testing else { answer(["error": "icons only works on a --test run"]); return }
+            if let on = request["on"] as? Bool { browser.prefs.tabsLayout = on ? .icons : .left }
+            DispatchQueue.main.asyncAfter(deadline: .now() + (request["on"] == nil ? 0 : 0.6)) {
+                let named = Dictionary(uniqueKeysWithValues: browser.tabs.map { ($0.id, Bench.short($0)) })
+                let tiles = IconTiles.frames.compactMap { id, frame -> [String: Any]? in
+                    guard let short = named[id] else { return nil }
+                    return ["id": short, "frame": [frame.minX, frame.minY, frame.width, frame.height].map(Double.init),
+                            "tip": IconTiles.tips[id] ?? "", "pair": IconTiles.pairs[id].flatMap { named[$0] } ?? ""]
+                }.sorted { (($0["frame"] as? [Double])?[1] ?? 0) < (($1["frame"] as? [Double])?[1] ?? 0) }
+                answer([
+                    "on": browser.prefs.iconColumn, "layout": browser.prefs.tabsLayout.rawValue,
+                    "columnWidth": Double(browser.prefs.columnWidth), "sideWidth": Double(browser.prefs.sideWidth),
+                    "tiles": tiles,
+                    "lights": (browser.window ?? Links.window).map(Bench.lights(of:)) ?? [],
+                ])
+            }
+
         case "appleoffer":
             // "Use your Apple passwords?" under a sign-in box (ApplePasswordsOffer),
             // which a test run never shows unless asked here. "asks": offer as a
@@ -3103,7 +3128,7 @@ final class Bench {
             guard Store.testing else { answer(["error": "column only works on a --test run — it would picture your tabs"]); return }
             guard let path = request["path"] as? String else { answer(["error": "column needs a path"]); return }
             let height = request["height"] as? Double ?? 600
-            let width = Double(browser.prefs.sideWidth)
+            let width = Double(browser.prefs.columnWidth)
             let host = NSHostingView(rootView: SideBar(browser: browser, prefs: browser.prefs).frame(width: width, height: height))
             host.frame = NSRect(x: 0, y: 0, width: width, height: height)
             let window = NSWindow(contentRect: host.frame, styleMask: .borderless, backing: .buffered, defer: false)

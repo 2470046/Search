@@ -1788,7 +1788,9 @@ final class Browser: NSObject, ObservableObject {
     private var tabOriginal = ""
 
     func beginTabEdit(_ tab: Tab) {
-        guard let url = tab.shownURL else {
+        // The column of icons has no row to type in: the field over the
+        // page, with the address in it, as ⌘L brings it.
+        guard let url = tab.shownURL, !prefs.iconColumn else {
             edit()
             return
         }

@@ -160,9 +160,11 @@ enum SettingsIndex {
               more: "Sites with a dark look of their own already follow it. ⇧⌘D for the site you're on, ⌥⇧⌘D to pause everywhere.",
               keys: ["pages.dusk"], words: ["dark", "dusk", "night"], parent: "look"),
         .init(id: "tabs.layout", group: "window", icon: "sidebar.left",
-              title: "Tabs", detail: "Across the top of the window, or down a side as a column",
-              keys: ["sidebar", "sidebar.position"],
-              words: ["sidebar", "vertical tabs", "column", "left", "right", "top", "tab bar", "position"], kind: .wide),
+              title: "Tabs", detail: "Across the top of the window, down a side as a column, or as icons only",
+              more: "Icons only is a narrow column of each tab's icon, the title in a tooltip. Nothing grows under the pointer.",
+              keys: ["sidebar", "sidebar.position", "sidebar.icons"],
+              words: ["sidebar", "vertical tabs", "column", "left", "right", "top", "tab bar", "position",
+                      "icons only", "compact", "collapsed", "narrow", "favicons"], kind: .wide),
         .init(id: "sidebar.hides", group: "window", icon: "sidebar.squares.left",
               title: "Hide the column until the pointer reaches the edge", detail: "The page takes the whole window; ⌘S keeps the tabs out",
               keys: ["sidebar.hides"], words: ["auto hide", "sidebar"], parent: "tabs.layout"),
@@ -454,7 +456,8 @@ enum SettingsIndex {
     @MainActor static func applies(_ item: SettingsItem, _ prefs: Preferences) -> Bool {
         switch item.id {
         case "pages.dusk": return prefs.look != .light
-        case "sidebar.hides", "layout.cards", "sidebar.roomy", "pins.list": return prefs.sidebar
+        case "sidebar.roomy": return prefs.sidebar && !prefs.sideIcons
+        case "sidebar.hides", "layout.cards", "pins.list": return prefs.sidebar
         case "toolbar.left": return !prefs.sidebar
         default: return true
         }
@@ -465,6 +468,7 @@ enum SettingsIndex {
         switch item.id {
         case "pages.dusk": return "Only while Search isn't set to Light"
         case "toolbar.left": return "Only with the tabs across the top"
+        case "sidebar.roomy": return "Only with titles in the column"
         default: return "Only with the tabs down a side"
         }
     }
@@ -472,16 +476,19 @@ enum SettingsIndex {
 
 // MARK: - merged controls
 
-/// Tabs: across the top, or a column down either side. Reads and writes
-/// `sidebar` and `sidebar.position`, as the two switches did.
+/// Tabs: across the top, a column down either side, or that column as
+/// icons only. Reads and writes `sidebar` and `sidebar.position`, as the
+/// two switches did, and `sidebar.icons`. Icons only keeps the side the
+/// column was on.
 enum TabsLayout: String, CaseIterable, Identifiable {
-    case top, left, right
+    case top, left, right, icons
     var id: String { rawValue }
     var title: String {
         switch self {
         case .top: return "Top"
         case .left: return "Left"
         case .right: return "Right"
+        case .icons: return "Icons only"
         }
     }
 }
@@ -522,12 +529,17 @@ enum PeekChoice: String, CaseIterable, Identifiable {
 
 extension Preferences {
     var tabsLayout: TabsLayout {
-        get { !sidebar ? .top : (sidePosition == .right ? .right : .left) }
+        get { !sidebar ? .top : sideIcons ? .icons : (sidePosition == .right ? .right : .left) }
         set {
-            if newValue == .top {
+            switch newValue {
+            case .top:
                 sidebar = false
-            } else {
+            case .icons:
+                sideIcons = true
+                sidebar = true
+            case .left, .right:
                 sidePosition = newValue == .right ? .right : .left
+                sideIcons = false
                 sidebar = true
             }
         }
