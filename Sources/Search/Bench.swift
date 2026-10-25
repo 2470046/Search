@@ -2886,6 +2886,19 @@ final class Bench {
             case "unpeek": browser.peek(false)
             case "fold": browser.toggleFold()
             case "select": if let tab = find(request, in: browser) { browser.select(tab) }
+            case "swipe":
+                // Two fingers along the column, a step every frame for the
+                // first eight, then let go: the next space coming in, as a
+                // hand brings it (dx, default -160).
+                let dx = request["dx"] as? Double ?? -160
+                SpaceSwipe.shared.start(for: browser)
+                SpaceSwipe.shared.began()
+                for step in 0..<8 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + every * Double(step)) {
+                        SpaceSwipe.shared.moved(along: dx / 8)
+                    }
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + every * 8) { SpaceSwipe.shared.ended() }
             default: break
             }
 
