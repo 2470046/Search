@@ -44,6 +44,8 @@ struct SideBar: View {
     private final class Room {
         var height: CGFloat = .infinity
         var needed: CGFloat = 0
+        /// The rows' own height, as last laid out.
+        var drawn: CGFloat = 0
     }
 
     /// A tab's line: taller with roomier tabs turned on.
@@ -264,7 +266,10 @@ struct SideBar: View {
                     let needed = rowsHeight
                     Group {
                         if fits {
-                            rows
+                            rows.onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                                room.drawn = $0
+                                refit()
+                            }
                         } else {
                             ScrollViewReader { proxy in
                                 // The scroll view reaches into the margin on
@@ -276,6 +281,10 @@ struct SideBar: View {
                                 // resize; the wheel and the trackpad still scroll.
                                 ScrollView(.vertical) {
                                     rows.padding(.trailing, 10)
+                                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                                            room.drawn = $0
+                                            refit()
+                                        }
                                 }
                                 .padding(.trailing, -10)
                                 // The tab you go to is the tab you see — ⌘1–⌘9,
@@ -283,7 +292,10 @@ struct SideBar: View {
                                 .onChange(of: browser.activeID) { _, id in
                                     guard let id else { return }
                                     let representative = browser.activeSplit?.left ?? id
-                                    withAnimation(Motion.glide) { proxy.scrollTo(representative) }
+                                    // Without the glide on a test run: a hidden
+                                    // probe's window draws no frames, and the
+                                    // scroll stopped where its first one left it.
+                                    withAnimation(Store.testing ? nil : Motion.glide) { proxy.scrollTo(representative) }
                                 }
                                 // A turn of the run loop later, as the row across
                                 // the top does it (TabBar.reveal): the folded
@@ -300,10 +312,22 @@ struct SideBar: View {
                             }
                         }
                     }
-                    // The whole room under the pins, to be measured. A
-                    // window changing size, or a tab opened or closed,
-                    // builds nothing until the rows stop fitting or start.
-                    .frame(maxHeight: .infinity, alignment: .top)
+                    // The whole room under the pins, and never more, to be
+                    // measured: a minimum of nothing, so a plain stack taller
+                    // than the room runs on past its foot rather than making
+                    // the room as tall as itself. With no minimum, the room
+                    // measured was whatever the rows asked for once they ran
+                    // past the window, so a sum a few points short (two for
+                    // every folded group) kept the plain stack for good; and
+                    // the column, as tall as its rows, stood centred over the
+                    // window where nothing holds it at the top — folded away
+                    // and out over the page — its top out of reach, with
+                    // nothing to scroll it back by (idea 443). A window
+                    // changing size, or a tab opened or closed, builds
+                    // nothing until the rows stop fitting or start: what the
+                    // rows add up to decides at once, what they measure a
+                    // frame later, the larger of the two winning.
+                    .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
                         room.height = $0
                         refit()
@@ -326,9 +350,13 @@ struct SideBar: View {
     }
 
     private func refit() {
-        let now = room.needed <= room.height
+        let now = max(room.needed, room.drawn) <= room.height
+        if Store.testing { SideBar.measured = ["room": room.height, "needed": room.needed, "drawn": room.drawn, "fits": now ? 1 : 0] }
         if fits != now { fits = now }
     }
+
+    /// What the column last measured, for the bench (`columnscroll`). Test runs only.
+    @MainActor static var measured: [String: CGFloat] = [:]
 
     /// Another space's rows, drawn with the same pieces as this one's so the
     /// two read as one column while they pass — and nothing to press until
@@ -400,14 +428,17 @@ struct SideBar: View {
         let ungrouped = displayed.filter { $0.pin == nil && (!prefs.usesTabGroups || browser.group(of: $0) == nil) }.count
         let listBlock = CGFloat(listed) * (rowHeight + SideBar.gap) + (listed > 0 ? SideBar.gap : 0)
             + (showsLine(listed: listed, loose: ungrouped) ? KeepLine.height + SideBar.gap : 0)
+        let grouped = prefs.usesTabGroups ? browser.tabGroups.map { browser.visibleTabs(in: $0) } : []
         let rows = prefs.usesTabGroups
-            ? displayed.filter { $0.pin == nil && browser.group(of: $0) == nil }
-                + browser.tabGroups.flatMap { browser.visibleTabs(in: $0) }
+            ? displayed.filter { $0.pin == nil && browser.group(of: $0) == nil } + grouped.flatMap { $0 }
             : displayed.filter { $0.pin == nil }
         // A pair is two lines (see SplitTabItem).
         let pairs = rows.filter { browser.split(for: $0) != nil }.count
         let heading = icons ? GroupHeading.compactHeight : GroupHeading.height
-        let headings = prefs.usesTabGroups ? CGFloat(browser.tabGroups.count) * (heading + SideBar.gap) : 0
+        // A folded group showing none of its tabs still has its empty stack
+        // of them under its heading, and the gap after it.
+        let headings = CGFloat(grouped.count) * (heading + SideBar.gap)
+            + CGFloat(grouped.filter(\.isEmpty).count) * SideBar.gap
         let loose = CGFloat(rows.count) * (rowHeight + SideBar.gap) + CGFloat(pairs) * rowHeight + headings
         return listBlock + loose + rowHeight + 8
     }
