@@ -307,8 +307,9 @@ enum Browsers {
 
     /// A window is closing. The last one on screen stays, its browser kept,
     /// as the one window always was: opened again, it has its tabs, their
-    /// pages asleep meanwhile but for what can't be (see sleepShut). One closed while others stay open goes, tabs and all, and ⇧⌘T
-    /// can bring it back.
+    /// pages asleep meanwhile but for what can't be (see sleepShut). One
+    /// closed while others stay open goes, tabs and all, and ⇧⌘T can bring
+    /// it back.
     /// The app is quitting: windows closing are not windows closed.
     static var quitting = false
 
