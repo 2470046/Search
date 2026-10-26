@@ -22,6 +22,7 @@ in [ROADMAP.md](ROADMAP.md).
 - GPTZero can start again: WebKit sent its worker an empty cookie-change notification, and left Chrome's install-reason constants out of content scripts. Both stopped parts of the extension as they began, including its copy tracker, LMS bridge and recorder. Thanks [@mastercoder26](https://github.com/mastercoder26) for reporting ([#724](https://github.com/driceroland/Search/issues/724))
 - The address field's page cover fades without scaling, so its edges stay over the page while the field opens and closes. The field keeps its small zoom and the same animation timing, with Split View on or off. Thanks [@mocki-toki](https://github.com/mocki-toki) ([#718](https://github.com/driceroland/Search/pull/718))
 - Settings scrolls with the pointer anywhere over its page, the empty margins beside the rows included; it scrolled only over the column of rows. Thanks [@mocki-toki](https://github.com/mocki-toki) ([#719](https://github.com/driceroland/Search/pull/719))
+- The page under a peek or under the column out over it no longer reacts to the pointer: links there stopped lighting up, menus that open on hover stayed shut and the pointer stayed an arrow over the column and the dimmed page, instead of turning into a hand or a caret for the page underneath. A click that somehow reaches the page under a peek puts the peek away, as a click beside the panel does, and is never the page's (idea 418)
 
 ### Held back
 

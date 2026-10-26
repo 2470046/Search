@@ -1005,6 +1005,41 @@ final class Bench {
             }
             walk(0)
 
+        case "pointer":
+            // What a page's own tracking area hands its view as the pointer
+            // goes over it — a move, or the pointer leaving — and a press,
+            // at a point of the window from its top-left, straight to the
+            // page's view whatever lies over it there (see PageView's
+            // covered). The window never sees them, the probe being hidden.
+            // Only on a SEARCH_PROBE run.
+            guard Store.testing else { answer(["error": "pointer only works on a --test run"]); return }
+            guard let tab = find(request, in: browser), let web = tab.built, let window = web.window,
+                  let x = request["x"] as? Double, let y = request["y"] as? Double
+            else { answer(["error": "pointer needs a tab's id, an x and a y"]); return }
+            let point = NSPoint(x: x, y: Double(window.frame.height) - y)
+            let stamp = ProcessInfo.processInfo.systemUptime
+            func mouse(_ type: NSEvent.EventType) -> NSEvent? {
+                NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: stamp,
+                                   windowNumber: window.windowNumber, context: nil, eventNumber: 0,
+                                   clickCount: type == .mouseMoved ? 0 : 1, pressure: type == .leftMouseDown ? 1 : 0)
+            }
+            switch request["what"] as? String ?? "move" {
+            case "press":
+                if let down = mouse(.leftMouseDown) { web.mouseDown(with: down) }
+                if let up = mouse(.leftMouseUp) { web.mouseUp(with: up) }
+            case "enter":
+                if let entered = NSEvent.enterExitEvent(with: .mouseEntered, location: point, modifierFlags: [], timestamp: stamp,
+                                                        windowNumber: window.windowNumber, context: nil, eventNumber: 0,
+                                                        trackingNumber: 0, userData: nil) { web.mouseEntered(with: entered) }
+            default:
+                if let moved = mouse(.mouseMoved) { web.mouseMoved(with: moved) }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                // "covered": the page took it as under cover, and heard nothing.
+                answer(["peek": browser.peekTab?.address?.absoluteString ?? "", "peeking": browser.peeking,
+                        "covered": web.covered])
+            }
+
         case "hit":
             // What a press at a point of the window lands on, and whether
             // AppKit would carry the window off on a drag from there — the
@@ -3474,7 +3509,7 @@ final class Bench {
 
         default:
             answer(["error": "unknown command “\(verb)”", "commands": [
-                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups", "suggest", "translate", "profile", "settings",
+                "tabs", "open", "go", "openmark", "close", "wait", "sleep", "select", "text", "nowplaying", "eval", "click", "type", "submit", "shot", "probe", "key", "textcheck", "resize", "hit", "pointer", "film", "float", "window", "pages", "picture", "pdf", "place", "group", "tospace", "field", "bookmark", "marks", "menu", "keyeq", "fill", "pin", "middle", "windows", "quit", "towindow", "news", "pull", "magnify", "wheel", "space", "split", "strip", "column", "fold", "consent", "update", "site", "little", "ui", "import", "import-preview", "import-file", "import-file-start", "import-file-status", "import-file-cancel", "remove-folder", "passwords", "accounts", "find", "answer", "visible", "ai", "notifications", "popups", "suggest", "translate", "profile", "settings",
             ]])
         }
     }

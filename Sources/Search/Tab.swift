@@ -2223,8 +2223,74 @@ final class PageView: WKWebView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        // A press that reaches the page under a peek is a press beside the
+        // panel, which puts the peek away (see Peek.swift); under the column
+        // it is nobody's.
+        if underCover(event) {
+            if let browser, browser.peekTab != nil, browser.peekTab?.built !== self { browser.closePeek() }
+            return
+        }
         onTouch?()
         super.mouseDown(with: event)
+    }
+
+    // MARK: - under the column or a peek
+
+    /// The pointer is over the page, but under something of the window's
+    /// lying on it: the column out over the page while it is folded, or a
+    /// peek and the dimming round it (Browser.covers). The window gives a
+    /// click there to what is on top, but the page's own tracking area hears
+    /// every move under it all the same — AppKit tracks by rectangle, not by
+    /// what is in front — so WebKit went on lighting up links, opening menus
+    /// that open on hover, showing their tooltips and turning the pointer
+    /// into a hand or a caret over the column and the dimmed page (idea 418).
+    /// Under cover the page is told once that the pointer has gone, and
+    /// hears nothing more of it until it is back.
+    private(set) var covered = false
+
+    /// The browser of the window the page is in.
+    private var browser: Browser? {
+        guard let window else { return nil }
+        return Browsers.all.first { $0.window === window }
+    }
+
+    /// Whether the event is under cover, and if so, the page told so.
+    private func underCover(_ event: NSEvent) -> Bool {
+        guard let window, event.window == nil || event.window === window,
+              browser?.covers(self, at: event.locationInWindow) == true
+        else {
+            covered = false
+            return false
+        }
+        guard !covered else { return true }
+        covered = true
+        // WebKit reads a pointer leaving as one more move, where it left:
+        // told it left from far outside the page, nothing in the page is
+        // under it any more, and the pointer goes back to an arrow.
+        if let gone = NSEvent.enterExitEvent(
+            with: .mouseExited, location: NSPoint(x: -10_000, y: -10_000), modifierFlags: [],
+            timestamp: event.timestamp, windowNumber: window.windowNumber, context: nil,
+            eventNumber: 0, trackingNumber: 0, userData: nil
+        ) {
+            super.mouseExited(with: gone)
+        }
+        NSCursor.arrow.set()
+        return true
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        if underCover(event) { return }
+        super.mouseMoved(with: event)
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        if underCover(event) { return }
+        super.mouseEntered(with: event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        if underCover(event) { return }
+        super.rightMouseDown(with: event)
     }
 
     /// The side buttons a mouse has for back and forward — button 3 and 4.
@@ -2233,6 +2299,7 @@ final class PageView: WKWebView {
     /// drivers settled on regardless, so it's what a mouse's own firmware
     /// is tuned to send.
     override func otherMouseDown(with event: NSEvent) {
+        if underCover(event) { return }
         switch event.buttonNumber {
         case 3 where canGoBack: goBack()
         case 4 where canGoForward: goForward()
