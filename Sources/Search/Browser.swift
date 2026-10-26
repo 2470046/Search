@@ -2100,10 +2100,16 @@ final class Browser: NSObject, ObservableObject {
         let shown = record?.space ?? Store.settings.string(forKey: "space.current").flatMap(UUID.init) ?? Space.firstID
         let profile = Spaces.profile(of: shown)
         profileID = profile
-        spaces = Spaces.read(profile: profile)
+        let loaded = Spaces.read(profile: profile)
+        spaces = loaded
         history = Profiles.history(profile)
         bookmarks = Profiles.bookmarks(profile)
-        spaceID = Spaces.read(profile: profile).first?.id ?? Space.firstID
+        // With spaces off, the window is the profile's home: the session and
+        // the store that were there before spaces, wherever its dot has been
+        // moved to. With them on, the last space is chosen below.
+        spaceID = prefs.usesSpaces
+            ? loaded.first?.id ?? Space.firstID
+            : (profile == Profile.personalID ? Space.firstID : Profiles.shared.profile(profile).home)
         super.init()
         let first = !Browser.booted
         Browser.booted = true
@@ -2190,7 +2196,7 @@ final class Browser: NSObject, ObservableObject {
                     return
                 }
                 guard !isPopup else { return }
-                // This profile's alone, its first space first.
+                // This profile's alone, in the order the user arranged them.
                 let list = Spaces.read(profile: profileID)
                 guard list != spaces, !list.isEmpty, all.contains(where: { $0.id == list[0].id }) else { return }
                 spaces = list
