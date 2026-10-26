@@ -650,7 +650,7 @@ struct SideBar: View {
                         }
                         rowItem(tab, tabs: browser.tabs, splits: browser.splits,
                                 activeID: browser.activeID, interactive: true, pill: pill,
-                                close: { browser.close(tab) })
+                                close: { browser.closeTab(tab) })
                         // Positions here are among the loose rows; the pinned block
                         // sits in front of them in the real list.
                         .modifier(Carried(index: index, count: loose.count, step: step, vertical: true,
@@ -694,7 +694,7 @@ struct SideBar: View {
             ForEach(Array(members.enumerated()), id: \.element.id) { index, tab in
                 rowItem(tab, tabs: browser.tabs, splits: browser.splits,
                         activeID: browser.activeID, interactive: true, pill: pill,
-                        close: { browser.close(tab) })
+                        close: { browser.closeTab(tab) })
                     .padding(.leading, icons ? 0 : 14)
                     .modifier(Carried(index: index, count: members.count,
                                       step: rowHeight + SideBar.gap, vertical: true,
@@ -1177,8 +1177,9 @@ private struct SideRow: View {
                 ZStack {
                     if hovering {
                         // A pinned row is put down, not closed (see
-                        // Browser.close), and says so, as Arc's does.
-                        Image(systemName: tab.pin != nil ? "minus" : "xmark")
+                        // Browser.close), and says so, as Arc's does; so is
+                        // a grouped tab's page while it is open (closeTab).
+                        Image(systemName: tab.pin != nil || browser.putsAway(tab) ? "minus" : "xmark")
                             .font(.system(size: 8, weight: .semibold))
                             .foregroundStyle(Palette.muted)
                             .frame(width: 15, height: 15)

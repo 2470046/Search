@@ -3803,6 +3803,13 @@ final class Bench {
             browser.close(page)
             reply()
 
+        case "closeTab":
+            // Close Tab as a hand asks for it — ⌘W, the row's cross, its
+            // menu — where a tab in a group is put away (Browser.closeTab).
+            guard let page = tab() else { answer(["error": "split closeTab needs id"]); return }
+            browser.closeTab(page)
+            reply()
+
         case "newTab":
             browser.newTab()
             reply()
