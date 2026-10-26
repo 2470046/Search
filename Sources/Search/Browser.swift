@@ -1992,6 +1992,8 @@ final class Browser: NSObject, ObservableObject {
         var kind: CloseKind = .clear
         /// The tab you were on, which comes back in front.
         var front = false
+        /// Silenced by hand when it closed, so it comes back the same way.
+        var muted = false
 
         var label: String { title.isEmpty ? Address.pretty(url) : title }
     }
@@ -3050,7 +3052,8 @@ final class Browser: NSObject, ObservableObject {
                 // arrived at: quitting on it is leaving it.
                 touched: visibleTabIDs.contains(tab.id) ? Date() : tab.touched,
                 letGo: tab.pin == nil ? tab.letGo : nil,
-                listed: tab.pin != nil && tab.listed ? true : nil
+                listed: tab.pin != nil && tab.listed ? true : nil,
+                muted: tab.muted
             ))
         }
         // The tab you were on isn't kept — a private one: the one kept just
@@ -3844,6 +3847,7 @@ final class Browser: NSObject, ObservableObject {
             let group = regroup(ghost)
             tab.groupID = group.id
             regrouped = regrouped || group.back
+            tab.muted = ghost.muted
             tab.restore(url: ghost.url, title: ghost.title)
             tabs.insert(tab, at: safeInsertionIndex(ghost.index))
             if let was = ghost.was { back[was] = tab }
@@ -3880,6 +3884,7 @@ final class Browser: NSObject, ObservableObject {
         prepare(tab)
         let group = regroup(ghost)
         tab.groupID = group.id
+        tab.muted = ghost.muted
         leaving()
         tabs.insert(tab, at: safeInsertionIndex(ghost.index))
         if group.back { arrangeGroupedTabs() }
@@ -3915,7 +3920,7 @@ final class Browser: NSObject, ObservableObject {
         guard !tab.shy, let url = tab.address else { return }
         ghosts.append(Ghost(url: url, title: tab.title, index: index, groupID: tab.groupID,
                             partner: partner, onLeft: onLeft, was: tab.id, batch: batching?.id,
-                            kind: batching?.kind ?? .clear))
+                            kind: batching?.kind ?? .clear, muted: tab.muted))
         // Twelve steps back, a Clear counting as one: its tabs come back
         // together or not at all, however many there were.
         var steps = Set<UUID>()
@@ -4986,6 +4991,7 @@ final class Browser: NSObject, ObservableObject {
             // Never later than now: a clock set wrong once would keep the tab forever.
             if let touched = entry.touched { tab.touch(at: min(touched, Date())) }
             tab.letGo = entry.letGo.map { min($0, Date()) }
+            tab.muted = entry.muted
             tab.pin = entry.pin
             tab.pinID = entry.pin == nil ? nil : entry.pinID
             tab.listed = entry.pin != nil && entry.listed == true
@@ -5398,6 +5404,11 @@ final class Browser: NSObject, ObservableObject {
         // entry that only ever holds an address is half a memory.
         // Anywhere a tab lands is worth remembering for next launch.
         tab.$address
+            .dropFirst()
+            .sink { [weak self] _ in self?.rememberSession() }
+            .store(in: &bag)
+
+        tab.$muted
             .dropFirst()
             .sink { [weak self] _ in self?.rememberSession() }
             .store(in: &bag)

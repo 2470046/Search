@@ -567,8 +567,8 @@ final class Tab: ObservableObject, Identifiable {
     var duskFrames: [WKFrameInfo] = []
     /// Silenced by hand from its speaker or its menu: the page plays on and
     /// is not heard. WebKit keeps the mute on the view from one page to the
-    /// next, so it is only set again on a view built new, as a sleeping tab
-    /// wakes (see build()).
+    /// next, so it is set on a view built new before that view begins loading
+    /// the tab's page (see build()).
     @Published var muted = false
     /// An extension is recording from this tab's page (see RecordingIndicator).
     @Published var recording = false
@@ -917,7 +917,8 @@ final class Tab: ObservableObject, Identifiable {
         PopupGestureRelay.install(on: controller)
         Shield.shared.protect(controller)
         built = web
-        // A tab muted before it went to sleep wakes muted.
+        // Set before loadAndVerify gives this view a page: a tab restored or
+        // woken muted must not make its first sound while that page boots.
         if muted { Muter.set(true, on: web) }
         arm(hiding: veils)
 
