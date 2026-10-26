@@ -397,7 +397,7 @@ struct SideBar: View {
                     }
                 }
                 // Under the groups, as on screen.
-                if showsLine(listed: listed.count, loose: rest.count) {
+                if showsLine(kept: pins.count + listed.count + groups.count, listed: listed.count, loose: rest.count) {
                     KeepLine(clears: false) {}
                 }
                 ForEach(rest) { tab in
@@ -427,7 +427,7 @@ struct SideBar: View {
         let listed = browser.listedPins.count
         let ungrouped = displayed.filter { $0.pin == nil && (!prefs.usesTabGroups || browser.group(of: $0) == nil) }.count
         let listBlock = CGFloat(listed) * (rowHeight + SideBar.gap) + (listed > 0 ? SideBar.gap : 0)
-            + (showsLine(listed: listed, loose: ungrouped) ? KeepLine.height + SideBar.gap : 0)
+            + (showsLine(kept: keptCount, listed: listed, loose: ungrouped) ? KeepLine.height + SideBar.gap : 0)
         let grouped = prefs.usesTabGroups ? browser.tabGroups.map { browser.visibleTabs(in: $0) } : []
         let rows = prefs.usesTabGroups
             ? displayed.filter { $0.pin == nil && browser.group(of: $0) == nil } + grouped.flatMap { $0 }
@@ -487,9 +487,16 @@ struct SideBar: View {
     /// The line between what is kept and what comes and goes, with the
     /// pinned rows on: over the tabs Clear would close, or under rows with
     /// nothing below them yet. Not with the rows off, nor with nothing on
-    /// either side of it.
-    private func showsLine(listed: Int, loose: Int) -> Bool {
-        prefs.showsPinRows && listed + loose > 0
+    /// either side of it: nothing kept above it either — no pin of this
+    /// space, square or row, and no group — until the first is pinned
+    /// (idea 444), as the row across the top has it (TabBar.showsPinLine).
+    private func showsLine(kept: Int, listed: Int, loose: Int) -> Bool {
+        prefs.showsPinRows && kept > 0 && listed + loose > 0
+    }
+
+    /// What stands above the line in this space: its pins and its groups.
+    private var keptCount: Int {
+        browser.squarePins.count + browser.listedPins.count + (prefs.usesTabGroups ? browser.tabGroups.count : 0)
     }
 
     /// How many squares go in each row: at most four — fewer only when the
@@ -628,7 +635,7 @@ struct SideBar: View {
             let loose = looseTabs
             // Under the groups: Clear keeps them, as it keeps the pins, so
             // everything above the line is what stays.
-            if showsLine(listed: browser.listedPins.count, loose: loose.count) {
+            if showsLine(kept: keptCount, listed: browser.listedPins.count, loose: loose.count) {
                 KeepLine(clears: !loose.isEmpty) { browser.clearTabs() }
             }
             let ghost: Int? = if case .loose(let at)? = crossing?.target { at } else { nil }
@@ -1308,6 +1315,8 @@ struct Quiet: View {
 /// the tabs below it closed, everything above it left as it was.
 struct KeepLine: View {
     static let height: CGFloat = 18
+    /// How many are drawn, for the bench (`columnscroll`). Test runs only.
+    @MainActor static var drawn = 0
     /// Whether there is anything under it to clear.
     let clears: Bool
     let act: () -> Void
@@ -1339,6 +1348,8 @@ struct KeepLine: View {
         .frame(height: KeepLine.height)
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        .onAppear { if Store.testing { KeepLine.drawn += 1 } }
+        .onDisappear { if Store.testing { KeepLine.drawn -= 1 } }
         .animation(Motion.quick, value: hovering)
     }
 }

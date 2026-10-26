@@ -2343,7 +2343,8 @@ final class Bench {
             }
             func report() {
                 var out: [String: Any] = ["measured": SideBar.measured.mapValues(Double.init),
-                                          "height": Double(window.frame.height), "scrolls": false]
+                                          "height": Double(window.frame.height), "scrolls": false,
+                                          "lines": KeepLine.drawn]
                 out["all"] = scrolls(in: frame).map { view in
                     let rect = view.convert(view.bounds, to: nil)
                     return [Double(rect.minX), Double(rect.minY), Double(rect.width), Double(rect.height)]
