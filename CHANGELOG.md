@@ -26,6 +26,10 @@ in [ROADMAP.md](ROADMAP.md).
 - The page under a peek or under the column out over it no longer reacts to the pointer: links there stopped lighting up, menus that open on hover stayed shut and the pointer stayed an arrow over the column and the dimmed page, instead of turning into a hand or a caret for the page underneath. A click that somehow reaches the page under a peek puts the peek away, as a click beside the panel does, and is never the page's (idea 418)
 - Bookmarks in the address field: typing matches your bookmarks by name or address, the words in any order, from two letters on, each with a small bookmark mark and before the places in your history, three places in all as before, and the grey ending can finish towards one. Only the window's profile's bookmarks, and quick with thousands of them imported from Firefox or elsewhere (idea 417)
 
+### Changed
+
+- Settings says less and sits flatter: no line of explanation under each group's heading, every row of a card at the same level (Darken pages that stay light, Hide the column and The page as a card no longer indented under the row they depend on), and the hairlines between rows run from one edge of the card to the other. Every setting is still there, and still found by its words.
+
 ### Held back
 
 Not in this version, kept on main for a later one:
