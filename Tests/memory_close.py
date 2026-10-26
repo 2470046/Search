@@ -3,8 +3,9 @@
 
 Build first (`./build.sh`), then `python3 Tests/memory_close.py` from a
 worktree; `--sites` adds a round on real sites (network needed),
-`--last-window` weighs the app after its only window closes (its tabs are
-kept, pages and all, by design: printed, not checked), `--keep` leaves the
+`--last-window` closes the only window with the app running and checks its
+tabs sleep but for one playing sound, and wake on screen when the window
+comes back (Browser.sleepShut), `--keep` leaves the
 world for a look afterwards. It uses the split suite's harness:
 started hidden with SEARCH_MEASURE (pages throttled as they are for
 people), in a world of its own, everything removed afterwards. No window
@@ -140,6 +141,80 @@ def close(ids):
         time.sleep(0.3)
 
 
+# A 440 Hz tone, half a minute of it, played in the page (as media_keys.py).
+TONE = """(function () {
+  var r = 8000, n = r * 30, b = new ArrayBuffer(44 + n * 2), d = new DataView(b);
+  function s(o, t) { for (var i = 0; i < t.length; i++) d.setUint8(o + i, t.charCodeAt(i)) }
+  s(0, 'RIFF'); d.setUint32(4, 36 + n * 2, true); s(8, 'WAVEfmt '); d.setUint32(16, 16, true);
+  d.setUint16(20, 1, true); d.setUint16(22, 1, true); d.setUint32(24, r, true); d.setUint32(28, r * 2, true);
+  d.setUint16(32, 2, true); d.setUint16(34, 16, true); s(36, 'data'); d.setUint32(40, n * 2, true);
+  for (var i = 0; i < n; i++) d.setInt16(44 + i * 2, Math.sin(i / r * 2 * Math.PI * 440) * 800, true);
+  var a = document.createElement('audio'); a.loop = true;
+  a.src = URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+  document.body.appendChild(a); a.play(); return 1;
+})()"""
+
+
+def last_window(t):
+    """The last window closed with the app running: its tabs stay, their
+    pages sleep (Browser.sleepShut) but for one playing sound; back, the
+    window has the same tabs and the one in front wakes."""
+    ids = open_heavy(5, "last")
+    loud = ids[1]
+    # Played while in front, as someone would start it, then left for the last.
+    sv.cmd({"do": "select", "id": loud})
+    sv.cmd({"do": "eval", "id": loud, "js": TONE})
+    for _ in range(20):
+        if any(x["id"] == loud and x.get("noisy") for x in sv.cmd({"do": "tabs"})["tabs"]):
+            break
+        time.sleep(0.5)
+    sv.cmd({"do": "select", "id": ids[-1]})
+    time.sleep(1)
+    t.ok("last window: the tone plays", any(x["id"] == loud and x.get("noisy") for x in sv.cmd({"do": "tabs"})["tabs"]))
+    full = weigh("5 heavy tabs, one playing sound, before the last window closes")
+    st = sv.sp("state")
+    rows = [x["url"] for x in st["tabs"]]
+    front = st.get("activeID") or next((x["id"] for x in st["tabs"] if x.get("active")), None)
+    pids = set(full["alive"]["processes"])
+    sv.cmd({"do": "windows", "action": "close", "n": 1})
+    settle(10)
+    after = weigh("last window closed, 10 s")
+    st = sv.sp("state")
+    tabs = {x["id"]: x for x in st["tabs"]}
+    quiet = [i for i in ids if i != loud]
+    t.ok("last window: the quiet tabs sleep", all(tabs[i]["asleep"] for i in quiet),
+         [(i, tabs[i]["asleep"], tabs[i]["awakeReason"]) for i in quiet])
+    t.ok("last window: the tab playing sound stays awake",
+         not tabs[loud]["asleep"] and tabs[loud]["awakeReason"] == "playing sound", tabs[loud])
+    t.ok("last window: the tabs stay", [x["url"] for x in st["tabs"]] == rows, st["tabs"])
+    gone = [p for p in pids if footprint(p) is None]
+    t.ok(f"last window: the sleeping pages' processes ended ({len(gone)} of {len(pids)})",
+         len(gone) >= len(quiet) - 1, sorted(pids - set(gone)))
+    t.ok("last window: the web processes give back what they held",
+         sum(after["content"].values()) < sum(full["content"].values()) / 3,
+         (sum(after["content"].values()) // MB, sum(full["content"].values()) // MB))
+
+    # Back, as ⌘N or the Dock icon brings it: the same tabs, the one in
+    # front woken, the others asleep until looked at.
+    sv.cmd({"do": "windows", "action": "new"})
+    settle(6)
+    back = weigh("window back, 6 s")
+    st = sv.sp("state")
+    shown = sv.cmd({"do": "windows"})["windows"]
+    tabs = {x["id"]: x for x in st["tabs"]}
+    t.ok("back: one window, nothing on screen", len(shown) == 1 and not any(w["shown"] for w in shown), shown)
+    t.ok("back: the same tabs", [x["url"] for x in st["tabs"]] == rows, st["tabs"])
+    if front in tabs:
+        t.ok("back: the tab in front wakes", not tabs[front]["asleep"] and tabs[front]["built"], tabs[front])
+    else:
+        t.ok("back: the tab in front is known", False, (front, list(tabs)))
+    t.ok("back: the others wait asleep",
+         all(tabs[i]["asleep"] for i in quiet if i != front), [(i, tabs[i]["asleep"]) for i in quiet])
+    t.ok("back: the sound plays on", not tabs[loud]["asleep"], tabs[loud])
+    close(ids)
+    settle(3)
+
+
 def main():
     t = sv.T()
     sites = "--sites" in sys.argv
@@ -205,14 +280,7 @@ def main():
             a = after["alive"]
             t.ok("sites: nothing closed left in memory", a["tabs"] <= a["inRows"] + 1 and a["pages"] == a["built"], a)
         if "--last-window" in sys.argv:
-            # The last window closed, the app still running: printed, as
-            # Windows.closing keeps that window's tabs, pages and all, for
-            # when it is opened again.
-            open_heavy(5, "last")
-            weigh("5 heavy tabs, before the last window closes")
-            sv.cmd({"do": "windows", "action": "close", "n": 1})
-            settle(10)
-            weigh("last window closed, 10 s")
+            last_window(t)
     finally:
         t.done()
         if "--keep" not in sys.argv:

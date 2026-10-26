@@ -2070,7 +2070,10 @@ final class Browser: NSObject, ObservableObject {
         didSet { if window != nil { shut = false } }
     }
     /// Its window closed and kept: the last one, closed with the app running.
-    var shut = false
+    /// Its tabs sleep meanwhile (see sleepShut); back, the ones it shows wake.
+    var shut = false {
+        didSet { if oldValue, !shut { wakeShown() } }
+    }
     /// Its window is there to be seen — on screen, or behind a hidden app.
     var isOpen: Bool { window != nil && !shut }
     /// Its window fills the screen. macOS takes the window's buttons away
