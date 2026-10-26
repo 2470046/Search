@@ -581,6 +581,7 @@ final class Extensions: NSObject, ObservableObject {
         // Its side panel, and what it said about it.
         SidePanelPages.shared.forget(id)
         ExtensionShims.panelTabs[id] = nil
+        ExtensionShims.panelTabIDs[id] = nil
         ExtensionShims.panelOff.remove(id)
         if let held = ExtensionShims.awake.removeValue(forKey: id) { IOPMAssertionRelease(held) }
         // Its ports read as gone only once WebKit has had a turn.
@@ -1482,9 +1483,10 @@ final class Extensions: NSObject, ObservableObject {
         Extensions.pressed[id] = Date()
         let tab = activeAdapter(for: context)
         if let tab { context.userGesturePerformed(in: tab) }
-        // An extension that asked for its button to open its side panel.
-        if ExtensionShims.panelOnClick.contains(id), context.action(for: tab)?.presentsPopup != true {
-            ExtensionShims.openPanel(context, owner: self)
+        // An extension that asked for its button to open its side panel,
+        // with one turned on over this tab.
+        if ExtensionShims.panelOnClick.contains(id), context.action(for: tab)?.presentsPopup != true,
+           ExtensionShims.openPanel(context, owner: self) {
             return
         }
         // A popup is opened here, straight away. Left to WebKit, it builds
