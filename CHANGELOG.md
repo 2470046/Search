@@ -11,6 +11,10 @@ in [ROADMAP.md](ROADMAP.md).
 
 ## Unreleased
 
+### Added
+
+- Close Tabs Below in a tab's right-click menu, beside Close Other Tabs (Close Tabs to the Right with tabs across the top). Keeps the clicked tab, the tabs above it and pinned tabs; folded groups below are closed too. Closed as one entry in Recently Closed, so one ⇧⌘T brings them all back, with their groups and Split View pairs. Thanks [@BeNDYGo](https://github.com/BeNDYGo) ([#710](https://github.com/driceroland/Search/pull/710)), asked for on [#704](https://github.com/driceroland/Search/issues/704)
+
 ### Held back
 
 Not in this version, kept on main for a later one:

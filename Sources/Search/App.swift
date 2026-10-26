@@ -333,11 +333,11 @@ struct SearchApp: App {
                 }
                 if !browser.ghosts.isEmpty {
                     Section("Recently Closed") {
-                        ForEach(browser.ghosts.reversed().prefix(10)) { ghost in
+                        ForEach(browser.recentlyClosed.prefix(10)) { ghost in
                             Button {
                                 browser.reopen(ghost)
                             } label: {
-                                MenuLine(title: ghost.label, url: ghost.url)
+                                MenuLine(title: browser.closedTitle(for: ghost), url: ghost.url)
                             }
                         }
                     }
