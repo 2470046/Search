@@ -5592,7 +5592,23 @@ final class Browser: NSObject, ObservableObject {
         // Three places and, if it can't be a place, a search. No open pages:
         // ⌘K exists for those, and mixing them in here made the list long
         // enough that reading it cost more than typing the address would have.
-        var list = history.suggestions(for: typed, limit: 3)
+        //
+        // Your bookmarks first, by name or address, then where you have been
+        // (idea 417): a bookmark is a place you chose to keep. One place of
+        // history stays if it has one, the front door the field completes
+        // towards, and a page that is both is one row, the bookmark's.
+        let visited = history.suggestions(for: typed, limit: 3)
+        var list: [Suggestion] = []
+        var seen = Set<String>()
+        func add(_ place: Suggestion) {
+            if list.count < 3, seen.insert(History.identity(for: place.url)).inserted { list.append(place) }
+        }
+        let front = visited.first.map { History.identity(for: $0.url) }
+        for kept in bookmarks.places(for: typed, limit: 3) {
+            if list.count == 2, let front, !seen.contains(front), History.identity(for: kept.url) != front { break }
+            add(kept)
+        }
+        visited.forEach(add)
         // Last in the list, and only when what was typed cannot be a place.
         if !typed.isEmpty, Address.url(from: typed) == nil {
             if let (keyword, rest) = Keyword.match(typed, in: prefs.keywords),
@@ -5612,8 +5628,11 @@ final class Browser: NSObject, ObservableObject {
         // complete towards. And with a command on top, Return runs it: a
         // grey ending in the field ("history" finishing as history.com)
         // would promise a place Return doesn't go to.
+        // Towards where you have been first, as before bookmarks were here,
+        // then towards a bookmark.
+        let places = list.filter { $0.kind != .open && !$0.kind.isCommand }
         let ending = command != nil ? nil
-            : history.completion(for: typed, among: list.filter { $0.kind != .open && !$0.kind.isCommand })
+            : history.completion(for: typed, among: places.filter { $0.kind != .bookmark } + places.filter { $0.kind == .bookmark })
         return (list, ending)
     }
 

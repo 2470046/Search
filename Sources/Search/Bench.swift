@@ -1240,6 +1240,7 @@ final class Bench {
                 case .search: "search"
                 case .open: "open"
                 case .visited: "visited"
+                case .bookmark: "bookmark"
                 case .known: "known"
                 case .command: "command"
                 }
@@ -1248,6 +1249,8 @@ final class Bench {
                 var out: [String: Any] = [
                     "typed": browser.typed, "editing": browser.editing,
                     "offers": browser.offers.map { [$0.key, kind($0), $0.url.absoluteString] },
+                    // The grey rest of an address the field would finish to.
+                    "ending": browser.ending ?? "",
                     "asked": browser.suggester.asked, "cancelled": browser.suggester.cancelled,
                     "tooSlow": browser.suggester.tooSlow,
                     "on": browser.prefs.engineSuggests, "shy": browser.active?.shy ?? false,
