@@ -14,6 +14,7 @@ in [ROADMAP.md](ROADMAP.md).
 ### Added
 
 - Close Tabs Below in a tab's right-click menu, beside Close Other Tabs (Close Tabs to the Right with tabs across the top). Keeps the clicked tab, the tabs above it and pinned tabs; folded groups below are closed too. Closed as one entry in Recently Closed, so one ⇧⌘T brings them all back, with their groups and Split View pairs. Thanks [@BeNDYGo](https://github.com/BeNDYGo) ([#710](https://github.com/driceroland/Search/pull/710)), asked for on [#704](https://github.com/driceroland/Search/issues/704)
+- With Icons only, the tab you're on shows a close button in place of its icon while the pointer is over it. A click closes that tab; another tab still selects first. In Split View, the cross closes only the focused page. Thanks [@BeNDYGo](https://github.com/BeNDYGo) ([#720](https://github.com/driceroland/Search/pull/720))
 
 ### Fixed
 
