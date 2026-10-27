@@ -2125,10 +2125,13 @@ enum ExtensionShims {
         // worker a message for every frame the extension opens.
         if (!embedded && chrome.tabs && typeof chrome.tabs.getCurrent === "function") {
           const getCurrent = chrome.tabs.getCurrent.bind(chrome.tabs);
+          // Undefined outside a tab, as Chrome answers: WebKit answers null
+          // in the side panel, and Claude's panel, reading `.id` of what
+          // isn't undefined, said "Claude isn't available on this page".
           const current = () => Promise.resolve(getCurrent()).then((t) => {
             if (t && !(t.index >= 0 && t.index < 1e6)) { popup = true; return undefined; }
             if (t) popup = false;
-            return t;
+            return t || undefined;
           });
           current().catch(() => {});
           put(chrome.tabs, "getCurrent", (callback) => {
@@ -4281,6 +4284,14 @@ enum ExtensionShims {
                 add("BACKGROUND", script.map { context.baseURL.appendingPathComponent($0) })
             }
             if ExtensionPopup.shared.extensionID == id { add("POPUP", ExtensionPopup.shared.view?.url) }
+            // Its panel, in each window that has it up. Not bound to one tab
+            // in what is said here (-1), which Chrome's panel opened for the
+            // whole window says too.
+            for browser in Browsers.all {
+                guard case .page(let owner, _, _) = browser.sidePanel, owner == id,
+                      let url = SidePanelPages.shared.web(in: browser)?.url else { continue }
+                add("SIDE_PANEL", url)
+            }
             found += ExtensionOffscreen.contexts(for: id, matching: filter)
             return found
 
