@@ -1034,10 +1034,10 @@ final class Bench {
             walk(0)
 
         case "pointer":
-            // What a page's own tracking area hands its view as the pointer
-            // goes over it — a move, or the pointer leaving — and a press,
-            // at a point of the window from its top-left, straight to the
-            // page's view whatever lies over it there (see PageView's
+            // What a page's own tracking areas hand their owners as the
+            // pointer goes over it — a move, or the pointer coming in — and a
+            // press, at a point of the window from its top-left, straight to
+            // the page's view whatever lies over it there (see PageView's
             // covered). The window never sees them, the probe being hidden.
             // Only on a SEARCH_PROBE run.
             guard Store.testing else { answer(["error": "pointer only works on a --test run"]); return }
@@ -1051,6 +1051,14 @@ final class Bench {
                                    windowNumber: window.windowNumber, context: nil, eventNumber: 0,
                                    clickCount: type == .mouseMoved ? 0 : 1, pressure: type == .leftMouseDown ? 1 : 0)
             }
+            // A move or an entry goes where AppKit sends it: to the owner of
+            // each of the page's tracking areas that asked for it, which for
+            // WebKit's own is not the view (see PointerGate).
+            func track(_ option: NSTrackingArea.Options, _ selector: Selector, _ event: NSEvent) {
+                for area in web.trackingAreas where area.options.contains(option) {
+                    if let owner = area.owner as? NSObject, owner.responds(to: selector) { _ = owner.perform(selector, with: event) }
+                }
+            }
             switch request["what"] as? String ?? "move" {
             case "press":
                 if let down = mouse(.leftMouseDown) { web.mouseDown(with: down) }
@@ -1058,14 +1066,17 @@ final class Bench {
             case "enter":
                 if let entered = NSEvent.enterExitEvent(with: .mouseEntered, location: point, modifierFlags: [], timestamp: stamp,
                                                         windowNumber: window.windowNumber, context: nil, eventNumber: 0,
-                                                        trackingNumber: 0, userData: nil) { web.mouseEntered(with: entered) }
+                                                        trackingNumber: 0, userData: nil) {
+                    track(.mouseEnteredAndExited, #selector(NSResponder.mouseEntered(with:)), entered)
+                }
             default:
-                if let moved = mouse(.mouseMoved) { web.mouseMoved(with: moved) }
+                if let moved = mouse(.mouseMoved) { track(.mouseMoved, #selector(NSResponder.mouseMoved(with:)), moved) }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 // "covered": the page took it as under cover, and heard nothing.
                 answer(["peek": browser.peekTab?.address?.absoluteString ?? "", "peeking": browser.peeking,
-                        "covered": web.covered])
+                        "covered": web.covered,
+                        "ungated": web.trackingAreas.filter { $0.owner !== web && !($0.owner is PointerGate) }.count])
             }
 
         case "hit":

@@ -2316,6 +2316,43 @@ final class PageView: WKWebView {
         return true
     }
 
+    /// Whether a move, an entry or a cursor update for the page is to go
+    /// through: not under cover (see PointerGate).
+    func hears(_ event: NSEvent) -> Bool { !underCover(event) }
+
+    /// WebKit's tracking areas aren't the view's: their owner is an object of
+    /// WebKit's own (WKMouseTrackingObserver) that hands each move straight
+    /// to the page, past this view's mouseMoved. Each goes behind a gate of
+    /// ours with the same rectangle and options, which asks the page first.
+    private var gates: [PointerGate] = []
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        gateTrackingAreas()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        gateTrackingAreas()
+    }
+
+    func gateTrackingAreas() {
+        for area in trackingAreas {
+            guard let owner = area.owner, owner !== self, !(owner is PointerGate) else { continue }
+            let gate = PointerGate(page: self, target: owner as AnyObject)
+            removeTrackingArea(area)
+            // One WebKit has made again replaces our gate for the old one.
+            for old in trackingAreas where old.options == area.options && (old.owner as? PointerGate)?.target === owner {
+                removeTrackingArea(old)
+            }
+            addTrackingArea(NSTrackingArea(rect: area.rect, options: area.options, owner: gate, userInfo: area.userInfo))
+            gates.append(gate)
+        }
+        // Gates whose area WebKit has since taken away go too.
+        let live = Set(trackingAreas.compactMap { $0.owner as? PointerGate }.map(ObjectIdentifier.init))
+        gates.removeAll { !live.contains(ObjectIdentifier($0)) }
+    }
+
     override func mouseMoved(with event: NSEvent) {
         if underCover(event) { return }
         super.mouseMoved(with: event)
@@ -2778,6 +2815,34 @@ final class PageView: WKWebView {
         onPull?(pull)
     }
 
+}
+
+/// The owner of one of a page's tracking areas in place of WebKit's own:
+/// it hands WebKit's object each move, entry and cursor update the page
+/// hears, and keeps back those under a peek or the column (idea 418).
+/// Leaving always goes through, so nothing stays lit up.
+final class PointerGate: NSResponder {
+    private weak var page: PageView?
+    private(set) weak var target: AnyObject?
+
+    init(page: PageView, target: AnyObject) {
+        self.page = page
+        self.target = target
+        super.init()
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    private func pass(_ selector: Selector, _ event: NSEvent, always: Bool = false) {
+        guard let target, target.responds(to: selector) else { return }
+        if !always, let page, !page.hears(event) { return }
+        _ = target.perform(selector, with: event)
+    }
+
+    override func mouseMoved(with event: NSEvent) { pass(#selector(NSResponder.mouseMoved(with:)), event) }
+    override func mouseEntered(with event: NSEvent) { pass(#selector(NSResponder.mouseEntered(with:)), event) }
+    override func cursorUpdate(with event: NSEvent) { pass(#selector(NSResponder.cursorUpdate(with:)), event) }
+    override func mouseExited(with event: NSEvent) { pass(#selector(NSResponder.mouseExited(with:)), event, always: true) }
 }
 
 /// Carries the page's scroll position back to its tab.
