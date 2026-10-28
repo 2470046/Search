@@ -2056,6 +2056,21 @@ final class PageView: WKWebView {
                 front.isAlternate = true
                 menu.insertItem(front, at: index + 1)
             }
+            // With Split View on, the link beside this page instead, the two
+            // as a pair. A copy of WebKit's item, for what WebKit reads off
+            // it when the action reaches it.
+            if Shared.prefs.splitView, let beside = item.copy() as? NSMenuItem {
+                beside.title = "Open Link in Split View"
+                beside.identifier = NSUserInterfaceItemIdentifier("SearchOpenLinkInSplitView")
+                beside.keyEquivalentModifierMask = []
+                beside.isAlternate = false
+                beside.target = self
+                beside.action = #selector(openLinkBeside(_:))
+                // After Open Link in New Tab and the item ⌥ turns it into.
+                var at = index + 1
+                while at < menu.items.count, menu.items[at].isAlternate { at += 1 }
+                menu.insertItem(beside, at: at)
+            }
             openLink = (item.target, item.action)
             item.title = "Open Link in New Tab"
             item.keyEquivalentModifierMask = []
@@ -2188,6 +2203,22 @@ final class PageView: WKWebView {
     @objc private func copyCleanPage(_ item: NSMenuItem) {
         guard let url = item.representedObject as? URL else { return }
         CleanLink.copy(url)
+    }
+
+    /// Open Link in Split View: the same action, the tab it makes marked to
+    /// go beside this page, for a second, as the one behind is.
+    private var besideSince: Date?
+
+    @objc private func openLinkBeside(_ item: NSMenuItem) {
+        guard let action = openLink.action else { return }
+        besideSince = Date()
+        NSApp.sendAction(action, to: openLink.target, from: item)
+    }
+
+    /// Whether the tab being made now is the menu's, to go beside this page.
+    func takeBeside() -> Bool {
+        defer { besideSince = nil }
+        return besideSince.map { Date().timeIntervalSince($0) < 1 } ?? false
     }
 
     @objc private func searchSelection(_ item: NSMenuItem) {

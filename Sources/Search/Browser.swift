@@ -6404,6 +6404,8 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         // The link menu's Open Link in New Tab, asked for in the last second.
         // Read once: reading it takes it.
         let behind = (webView as? PageView)?.takeBehind() == true
+        // Its Open Link in Split View, the same way.
+        let beside = (webView as? PageView)?.takeBeside() == true
         let popup = windowFeatures.width != nil || windowFeatures.height != nil
             || windowFeatures.toolbarsVisibility?.boolValue == false
         // WebKit's copy of the opener's configuration still holds the
@@ -6424,7 +6426,7 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         // pop-ups, takes the tab path as before. A window sized by the page,
         // "Sign in with…", is left alone, as is a modified click, and so is
         // anything that isn't a web page (about:blank, data:, blob:).
-        if clicked, !behind, !popup, prefs.pinsPeek, peekTab == nil, opener.pin != nil,
+        if clicked, !behind, !beside, !popup, prefs.pinsPeek, peekTab == nil, opener.pin != nil,
            [.linkActivated, .other].contains(action.navigationType),
            action.modifierFlags.intersection([.shift, .command, .option, .control]).isEmpty,
            let url = action.request.url, Browser.peekable(url) {
@@ -6453,10 +6455,17 @@ extension Browser: WKNavigationDelegate, WKUIDelegate {
         // ⌘-click's goes (see open(_:foreground:)).
         let destination = tabDestination
         destination.prepare(tab)
-        if behind {
+        if behind || beside {
             if prefs.usesTabGroups, !tab.shy, !tab.bench { tab.groupID = opener.groupID }
             destination.tabs.insert(tab, at: destination.placeForLink(from: opener))
             destination.noteLink(tab, from: opener)
+            // Open Link in Split View: beside the page it came from, the two
+            // as a pair, with the keys, as a peek kept beside is. Paired while
+            // it is still blank, so the pair wakes nothing WebKit is about to
+            // load into it. A pair that can't be made, or a link out of a
+            // site's own pop-up window, whose tab opens in another window,
+            // leaves it behind.
+            if beside, destination === self { pair(tab, with: opener, onLeft: false) }
         } else {
             destination.tabs.insert(tab, at: destination.placeForFront())
             if clicked, let run = destination.linkRun { destination.runBeforeScript = (tab.id, run) }
