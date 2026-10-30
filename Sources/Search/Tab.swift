@@ -2272,6 +2272,36 @@ final class PageView: WKWebView {
         super.mouseDown(with: event)
     }
 
+    // MARK: - a paused video filling the screen
+
+    /// A video filling the screen and paused gets VisionKit's view laid over
+    /// the whole page, a moment later: WebKit has looked into the frame on
+    /// screen for text and a subject to lift (VKCImageAnalysisOverlayView).
+    /// It has click recognizers of its own, and the one for a single click
+    /// took every click, text under it or not: AppKit held the press back
+    /// while it decided, the recognizer said yes, and the press never reached
+    /// the page. The click that paused a YouTube video was the last the page
+    /// heard: neither the video nor its play button played it again, only
+    /// the space bar did. Hidden, it is out of the way of the clicks, and
+    /// WebKit takes it away itself once the video plays. WebKit's switch
+    /// for it (TextRecognitionInVideosEnabled) can't be turned off instead:
+    /// the page's process asks all the same, and WebKit ends a process that
+    /// asks for what is switched off, so the video's page crashed.
+    private weak var hiddenAnalysis: NSView?
+
+    override func didAddSubview(_ subview: NSView) {
+        super.didAddSubview(subview)
+        guard NSStringFromClass(type(of: subview)).hasPrefix("VKCImageAnalysisOverlayView") else { return }
+        if fullscreenState != .notInFullscreen {
+            subview.isHidden = true
+            hiddenAnalysis = subview
+        } else if subview === hiddenAnalysis {
+            // The same view, back over a picture in the page: as WebKit has it.
+            subview.isHidden = false
+            hiddenAnalysis = nil
+        }
+    }
+
     // MARK: - under the column or a peek
 
     /// The pointer is over the page, but under something of the window's
